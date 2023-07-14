@@ -40,7 +40,9 @@
       console.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
       unlockScreenIfLocked(target);
       target.remove();
-      elementPicker.enabled = false;
+      if (!elementPicker.hoverInfo.shiftKey) {
+        elementPicker.enabled = false;
+      }
     })
   }
 
