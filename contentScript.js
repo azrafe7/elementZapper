@@ -44,7 +44,7 @@
     })
   }
 
-  // from https://github.com/gorhill/uBlock/blob/master/src/js/scriptlets/epicker.js
+  // credits to https://github.com/gorhill/uBlock/blob/master/src/js/scriptlets/epicker.js
   // zapElementAtPoint() function
   function unlockScreenIfLocked(elemToRemove) {
     const getStyleValue = (elem, prop) => {
@@ -80,75 +80,12 @@
     }
   };
 
-  function destroyPicker() {
-    if (elementPicker) {
-      elementPicker.close();
-      elementPicker = null;
-    }
-  }
-
-  function getVisibleRect(rect) {
-    let visibleRect = DOMRect.fromRect(rect);
-
-    if (visibleRect.x < 0) {
-      visibleRect.width += visibleRect.x;
-      visibleRect.x = 0;
-    }
-    if (visibleRect.y < 0) {
-      visibleRect.height += visibleRect.y;
-      visibleRect.y = 0;
-    }
-    if (visibleRect.x + visibleRect.width > window.innerWidth) {
-      visibleRect.width = window.innerWidth - visibleRect.x;
-    }
-    if (visibleRect.y + visibleRect.height > window.innerHeight) {
-      visibleRect.height = window.innerHeight - visibleRect.y;
-    }
-    return visibleRect;
-  }
-
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     console.log("[ElementZapper:CTX]", msg);
     const { event, data } = msg;
 
     if (event === "enablePicker") {
       elementPicker.enabled = true;
-    } else if (event === "takenScreenshot") {
-      let dataURL = data.dataURL;
-      let hoverInfo = data.hoverInfo;
-      let image = new Image();
-      image.onload = () => {
-        let visibleRect = getVisibleRect(hoverInfo.clientRect);
-        console.log("[ElementZapper:CTX] cropping...", visibleRect);
-        let canvas = document.createElement('canvas');
-        let ctx = canvas.getContext('2d');
-
-        const zoomLevel = window.devicePixelRatio;
-        if (zoomLevel != 1.0) {
-          visibleRect.x *= zoomLevel;
-          visibleRect.y *= zoomLevel;
-          visibleRect.width *= zoomLevel;
-          visibleRect.height *= zoomLevel;
-        }
-        canvas.width = visibleRect.width;
-        canvas.height = visibleRect.height;
-        
-        ctx.drawImage(image, visibleRect.x, visibleRect.y, visibleRect.width, visibleRect.height,
-                             0, 0, visibleRect.width, visibleRect.height);
-        
-        ((croppedDataURL) => {
-          canvas = null;
-          ctx = null;
-          console.log("[ElementZapper:CTX] send cropped dataURL", croppedDataURL);
-          chrome.runtime.sendMessage(
-            {
-              event: "openCroppedInNewTab",
-              data: croppedDataURL,
-            },
-          );
-        })(canvas.toDataURL());
-      };
-      image.src = dataURL;
     }
   });
 
