@@ -35,12 +35,12 @@
   let elementPicker = new ElementPicker(options);
   elementPicker.action = {
     trigger: "mouseup",
-    callback: ((target) => {
+    callback: ((event, target) => {
       console.log("[ElementZapper:CTX] target:", target);
       console.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
       unlockScreenIfLocked(target);
       target.remove();
-      if (!elementPicker.hoverInfo.shiftKey) {
+      if (!event.shiftKey) {
         elementPicker.enabled = false;
       }
     })

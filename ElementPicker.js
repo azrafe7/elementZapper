@@ -7,6 +7,8 @@
             // this.hoverBox.style.pointerEvents = "none";
             this.hoverBox.style.cursor = "crosshair";
             this.hoverBox.style.setProperty("z-index", 2147483647, "important");
+          
+            this._actionEvent = null;
 
             this.hoverBoxInfo = document.createElement("div");
             this.hoverBoxInfo.id = 'EP_hoverBoxInfo';
@@ -110,12 +112,12 @@
                       left: targetOffset.left + window.scrollX,
                       clientRect: targetOffset,
                       text: infoText,
-                      shiftKey: e.shiftKey,
                     }
 
                     if (this._triggered && this.action.callback) {
-                        this.action.callback(target);
+                        this.action.callback(this._actionEvent, target);
                         this._triggered = false;
+                        this._actionEvent = null;
                     }
                 } else {
                     // console.log("hiding hover box...");
@@ -211,12 +213,17 @@
                     if (this._triggerListener) {
                         document.removeEventListener(this.action.trigger, this._triggerListener);
                         this._triggered = false;
+                        this._actionEvent = null;
                     }
                     this._action = value;
 
-                    this._triggerListener = () => {
+                    this._triggerListener = (evt) => {
+                        this._actionEvent = evt;
                         this._triggered = true;
                         this._redetectMouseMove();
+                        if (this.action?.callback) {
+                          this._redetectMouseMove(); // call it again as the action may have altered the page
+                        }
                     }
                     document.addEventListener(this.action.trigger, this._triggerListener);
                 } else if (value.trigger !== undefined || value.callback !== undefined){ // allow empty action object
