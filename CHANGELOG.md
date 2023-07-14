@@ -5,4 +5,6 @@
  - set highlight to red
  - enable zapper
  - remove unneded code
+ - hold shift to continue zapping
+ - better hide hoverBox/hoverBoxInfo when disabled
  
