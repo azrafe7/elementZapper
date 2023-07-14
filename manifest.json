@@ -1,7 +1,7 @@
 {
-  "name": "WebClipElement",
+  "name": "ElementZapper",
   "version": "0.1.0",
-  "description": "Take screenshot of highligthed element",
+  "description": "Zap/remove any element",
   "manifest_version": 3,
   "permissions": ["activeTab"],
   "background": {
@@ -29,6 +29,6 @@
       "48": "assets/icon48.png",
       "128": "assets/icon128.png"
     },
-    "default_title": "WebClipElement"
+    "default_title": "ElementZapper"
   }
 }
