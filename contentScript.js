@@ -6,11 +6,11 @@
 
   const HIGHLIGHT_RED = "rgba(250, 70, 60, 0.5)";
   const HIGHLIGHT_GREEN = "rgba(17, 193, 12, 0.5)";
-  const HIGHLIGHT_BG_COLOR = HIGHLIGHT_GREEN;
+  const HIGHLIGHT_BG_COLOR = HIGHLIGHT_RED;
 
   const OUTLINE_RED = "rgba(250, 70, 60, 0.75)";
   const OUTLINE_GREEN = "rgba(17, 193, 12, 0.90)";
-  const OUTLINE_COLOR = OUTLINE_GREEN;
+  const OUTLINE_COLOR = OUTLINE_RED;
 
   /* if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     // dark mode
@@ -36,21 +36,11 @@
   elementPicker.action = {
     trigger: "mouseup",
     callback: ((target) => {
-      console.log("[WebClipElement:CTX] target:", target);
-      console.log("[WebClipElement:CTX] info:", elementPicker.hoverInfo);
-      // unlockScreenIfLocked(target);
-      // target.remove();
-      elementPicker.hoverInfo.element = null; // not serializable
-      const hoverInfoClone = structuredClone(elementPicker.hoverInfo);
+      console.log("[ElementZapper:CTX] target:", target);
+      console.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
+      unlockScreenIfLocked(target);
+      target.remove();
       elementPicker.enabled = false;
-      setTimeout(() => { // to ensure picker overlay is removed
-        chrome.runtime.sendMessage(
-          {
-            event: "takeScreenshot",
-            data: {hoverInfo: hoverInfoClone},
-          },
-        );
-      }, 0);
     })
   }
 
@@ -118,7 +108,7 @@
   }
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    console.log("[WebClipElement:CTX]", msg);
+    console.log("[ElementZapper:CTX]", msg);
     const { event, data } = msg;
 
     if (event === "enablePicker") {
@@ -129,7 +119,7 @@
       let image = new Image();
       image.onload = () => {
         let visibleRect = getVisibleRect(hoverInfo.clientRect);
-        console.log("[WebClipElement:CTX] cropping...", visibleRect);
+        console.log("[ElementZapper:CTX] cropping...", visibleRect);
         let canvas = document.createElement('canvas');
         let ctx = canvas.getContext('2d');
 
@@ -149,7 +139,7 @@
         ((croppedDataURL) => {
           canvas = null;
           ctx = null;
-          console.log("[WebClipElement:CTX] send cropped dataURL", croppedDataURL);
+          console.log("[ElementZapper:CTX] send cropped dataURL", croppedDataURL);
           chrome.runtime.sendMessage(
             {
               event: "openCroppedInNewTab",
@@ -166,7 +156,7 @@
   window.addEventListener('keyup', function(e) {
     if (e.keyCode == 27) {
       elementPicker.enabled = false;
-      console.log("[WebClipElement:CTX] user aborted");
+      console.log("[ElementZapper:CTX] user aborted");
     }
   });
 
