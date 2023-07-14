@@ -9,13 +9,15 @@
             this.hoverBox.style.setProperty("z-index", 2147483647, "important");
 
             this.hoverBoxInfo = document.createElement("div");
+            this.hoverBoxInfo.id = 'EP_hoverBoxInfo';
             this.hoverInfo = {
               element: null,
               tagName: "",
               width: 0,
               height: 0,
             }
-            this.hoverBoxInfo.innerText = "IMG 300 × 400";
+            this.hoverBoxInfo.innerText = "";
+            document.styleSheets[0].insertRule('#EP_hoverBoxInfo:empty { display: none;}', 0); // hide when empty
             this.hoverBoxInfo.style = 
               `background-color: rgba(0,0,0,.5);
               border-radius: 0 0 0 0;
@@ -108,6 +110,7 @@
                       left: targetOffset.left + window.scrollX,
                       clientRect: targetOffset,
                       text: infoText,
+                      shiftKey: e.shiftKey,
                     }
 
                     if (this._triggered && this.action.callback) {
@@ -132,6 +135,11 @@
             this.hoverBox.style.visibility = this._enabled ? "visible" : "hidden";
             this.hoverBoxInfo.style.visibility = this._enabled ? "visible" : "hidden";
             this._triggered = false;
+            if (!this._enabled) {
+              this.hoverBox.style.width = 0;
+              this.hoverBox.style.height = 0;
+              this.hoverBoxInfo.innerText = '';
+            }
         }
         get container() {
             return this._container;
