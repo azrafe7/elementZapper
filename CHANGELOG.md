@@ -8,3 +8,5 @@
  - hold shift to continue zapping
  - better hide hoverBox/hoverBoxInfo when disabled
  - redetectMouseMove twice in case of action triggered
+ - also send mouseEvent to callback
+ - add/remove event listeners on enable/disable
