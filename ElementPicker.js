@@ -19,7 +19,8 @@
               height: 0,
             }
             this.hoverBoxInfo.innerText = "";
-            document.styleSheets[0].insertRule('#EP_hoverBoxInfo:empty { display: none;}', 0); // hide when empty
+            // document.styleSheets[0].insertRule('#EP_hoverBoxInfo:empty { display: none;}', 0); // hide when empty
+            // ↑ done in CSS
             this.hoverBoxInfo.style = 
               `background-color: rgba(0,0,0,.5);
               border-radius: 0 0 0 0;
