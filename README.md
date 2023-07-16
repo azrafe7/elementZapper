@@ -1,7 +1,7 @@
 # ElementZapper
 Zap/remove any element.
 
-![alt text](./webstore_assets/screenshot_01.png "Screenshot")
+![alt text](./webstore_assets/ElementZapper_resized.mp4 "Video")
 
 # Overview
 Zap/remove any element.

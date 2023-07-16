@@ -7,4 +7,4 @@
  - remove unneded code
  - hold shift to continue zapping
  - better hide hoverBox/hoverBoxInfo when disabled
- 
+ - redetectMouseMove twice in case of action triggered
