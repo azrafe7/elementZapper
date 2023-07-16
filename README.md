@@ -1,7 +1,7 @@
 # ElementZapper
 Zap/remove any element.
 
-![usage](./webstore_assets/ElementZapper_resized.gif "usage")
+[![ElementZapper](./webstore_assets/screenshot_02_play.png)](https://www.youtube.com/watch?v=OgF6hQbiPmk)
 
 # Overview
 Zap/remove any element.
