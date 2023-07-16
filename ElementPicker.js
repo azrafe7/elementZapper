@@ -116,6 +116,7 @@
                     }
 
                     if (this._triggered && this.action.callback) {
+                        // console.log("TRIGGERED");
                         this.action.callback(this._actionEvent, target);
                         this._triggered = false;
                         this._actionEvent = null;
@@ -125,7 +126,8 @@
                     this.hoverBox.style.width = 0;
                 }
             };
-            document.addEventListener("mousemove", this._detectMouseMove);
+            
+            // document.addEventListener("mousemove", this._detectMouseMove);
         }
         get info() {
             return this.hoverInfo;
@@ -142,6 +144,15 @@
               this.hoverBox.style.width = 0;
               this.hoverBox.style.height = 0;
               this.hoverBoxInfo.innerText = '';
+              if (this._triggerListener) {
+                document.removeEventListener(this.action.trigger, this._triggerListener);
+              }
+              document.removeEventListener("mousemove", this._detectMouseMove);
+            } else {
+              if (this.action?.trigger && this._triggerListener) {
+                document.addEventListener(this.action.trigger, this._triggerListener);
+              }
+              document.addEventListener("mousemove", this._detectMouseMove);
             }
         }
         get container() {
