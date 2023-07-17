@@ -1,6 +1,6 @@
 {
   "name": "ElementZapper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zap/remove any element",
   "manifest_version": 3,
   "permissions": ["activeTab"],
