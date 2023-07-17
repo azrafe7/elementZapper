@@ -4,8 +4,6 @@ Zap/remove any element.
 [![ElementZapper](./webstore_assets/screenshot_02_play.png)](https://www.youtube.com/watch?v=OgF6hQbiPmk)
 
 # Overview
-Zap/remove any element.
-
 Get rid of annoying things on the internet.
 Hold SHIFT to continue zapping, or press ESC to quit zapper mode.
 
