@@ -34,7 +34,7 @@
   // create "disabled" elementPicker on page load
   let elementPicker = new ElementPicker(options);
   elementPicker.action = {
-    trigger: "mouseup",
+    trigger: "click",
     callback: ((event, target) => {
       console.log("[ElementZapper:CTX] target:", target);
       console.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
