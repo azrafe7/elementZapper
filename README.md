@@ -1,4 +1,4 @@
-# ElementZapper
+# Element Zapper
 Zap/remove any element.
 
 [![ElementZapper](./webstore_assets/screenshot_02_play.png)](https://www.youtube.com/watch?v=OgF6hQbiPmk)
