@@ -42,7 +42,6 @@
 
   // create "disabled" elementPicker on page load
   let elementPicker = new ElementPicker(options);
-  elementPicker.hoverBox.style.cursor = CURSORS[0];
   elementPicker.action = {
     trigger: "click",
     callback: ((event, target) => {
@@ -98,6 +97,7 @@
 
     if (event === "enablePicker") {
       elementPicker.enabled = true;
+      elementPicker.hoverBox.style.cursor = CURSORS[0];
     }
   });
 
