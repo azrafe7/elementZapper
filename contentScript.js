@@ -1,6 +1,12 @@
 "use strict";
 
 (async () => {
+
+  const DEBUG = false;
+  let debug = {
+    log: DEBUG ? console.log.bind(console) : () => {} // log or NO_OP
+  }
+
   let manifest = chrome.runtime.getManifest();
   console.log(manifest.name + " v" + manifest.version);
 
@@ -37,8 +43,8 @@
   elementPicker.action = {
     trigger: "click",
     callback: ((event, target) => {
-      console.log("[ElementZapper:CTX] target:", target);
-      console.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
+      debug.log("[ElementZapper:CTX] target:", target);
+      debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
       unlockScreenIfLocked(target);
       target.remove();
       if (!event.shiftKey) {
@@ -84,7 +90,7 @@
   };
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    console.log("[ElementZapper:CTX]", msg);
+    debug.log("[ElementZapper:CTX]", msg);
     const { event, data } = msg;
 
     if (event === "enablePicker") {
@@ -96,7 +102,7 @@
   window.addEventListener('keyup', function(e) {
     if (e.keyCode == 27 && elementPicker.enabled) {
       elementPicker.enabled = false;
-      console.log("[ElementZapper:CTX] user aborted");
+      debug.log("[ElementZapper:CTX] user aborted");
     }
   });
 
