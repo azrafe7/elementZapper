@@ -18,6 +18,8 @@
   const OUTLINE_GREEN = "rgba(17, 193, 12, 0.90)";
   const OUTLINE_COLOR = OUTLINE_RED;
 
+  const CURSORS = ["crosshair", "copy"];
+
   /* if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     // dark mode
     HIGHLIGHT_BG_COLOR = HIGHLIGHT_DARK;
@@ -40,6 +42,7 @@
 
   // create "disabled" elementPicker on page load
   let elementPicker = new ElementPicker(options);
+  elementPicker.hoverBox.style.cursor = CURSORS[0];
   elementPicker.action = {
     trigger: "click",
     callback: ((event, target) => {
@@ -106,4 +109,18 @@
     }
   });
 
+  // change picker cursor when holding SHIFT
+  function updateCursor(eventInfo) {
+    let {keyUp, event} = eventInfo;
+    if (elementPicker.enabled) {
+      let cursorIdx = +event.shiftKey;
+      if (elementPicker.hoverBox.style.cursor != CURSORS[cursorIdx]) {
+        // debug.log('[ElementZapper:CTX] change cursor to ' + CURSORS[cursorIdx]);
+        elementPicker.hoverBox.style.cursor = CURSORS[cursorIdx];
+      }
+    }
+  }
+  window.addEventListener('keyup', (e) => updateCursor({keyUp: true, event: e}));
+  window.addEventListener('keydown', (e) => updateCursor({keyUp: false, event: e}));
+  
 })();
