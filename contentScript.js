@@ -43,15 +43,19 @@
   // create "disabled" elementPicker on page load
   let elementPicker = new ElementPicker(options);
   elementPicker.action = {
-    trigger: "click",
+    trigger: "mouseup",
+
     callback: ((event, target) => {
-      debug.log("[ElementZapper:CTX] target:", target);
-      debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
-      unlockScreenIfLocked(target);
-      target.remove();
-      if (!event.shiftKey) {
-        elementPicker.enabled = false;
+      // debug.log("[WebClipElement:CTX] event:", event);
+      let continuePicking = event.shiftKey;
+      if (event.button == 0) { // only proceed if left mouse button was pressed
+        debug.log("[ElementZapper:CTX] target:", target);
+        debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
+        unlockScreenIfLocked(target);
+        target.remove();
       }
+      
+      elementPicker.enabled = continuePicking && event.button == 0;
     })
   }
 
