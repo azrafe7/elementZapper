@@ -31,5 +31,13 @@
       "128": "assets/icon128.png"
     },
     "default_title": "Element Zapper"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Z",
+        "mac": "Alt+Z"
+      }
+    }
   }
 }
