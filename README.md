@@ -12,4 +12,4 @@ Hold SHIFT to continue zapping, or press ESC to quit zapper mode.
 
 Credits to https://github.com/gorhill/uBlock for the screen-unlocking functionality. ;D
 
-CHANGELOG: https://github.com/azrafe7/webClipElement/blob/main/CHANGELOG.md
+CHANGELOG: https://github.com/azrafe7/elementZapper/blob/main/CHANGELOG.md
