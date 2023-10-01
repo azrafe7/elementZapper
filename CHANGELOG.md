@@ -1,5 +1,8 @@
  # CHANGELOG
 
+ ### v0.1.3 (01 Oct 2023)
+ - add Alt+Z as default keyboard shortcut
+
  ### v0.1.3 (24 Sep 2023)
  - less noise in console (only log if DEBUG == true)
  - change picker cursor when holding SHIFT
