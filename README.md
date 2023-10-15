@@ -7,11 +7,11 @@ You can find it here: https://chrome.google.com/webstore/detail/elementzapper/no
 
 # Overview
 Get rid of annoying things on the internet.
-Hold SHIFT to continue zapping, or press ESC to quit zapper mode.
+Hold SHIFT to continue zapping, or press ESC (or right-click) to quit zapper mode.
 
 You can also use Alt+Z to activate zapper mode (or configure an alternate shortcut key in the extension settings).
 
-v0.2.0 is out: Now works even better and on sites with iframes.
+v0.2.x is out: Now works even better and on sites with iframes.
 
 
 Credits to https://github.com/gorhill/uBlock for the screen-unlocking functionality. ;D
