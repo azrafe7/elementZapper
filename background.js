@@ -15,3 +15,19 @@ chrome.action.onClicked.addListener(async (tab) => {
     }
   );
 });
+
+chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+  const { event, data } = msg;
+  console.log(msg, sender, sendResponse);
+  console.log(sender.tab.id);
+  if (event === 'requestUnlock') {
+    console.log('send unlock');
+    chrome.tabs.sendMessage(
+      sender.tab.id,
+      {
+        event: "unlock",
+        data: null,
+      }
+    );
+  }
+});
