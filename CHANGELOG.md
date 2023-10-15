@@ -1,5 +1,12 @@
  # CHANGELOG
 
+ ### v0.2.0 (15 Oct 2023)
+ - inject in top frame only
+ - use an iframe overlay when enabled
+ - works on sites with multiple frames
+ - better close detection
+ - better highlight and info
+
  ### v0.1.3 (01 Oct 2023)
  - add Alt+Z as default keyboard shortcut
 

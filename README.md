@@ -11,6 +11,8 @@ Hold SHIFT to continue zapping, or press ESC to quit zapper mode.
 
 You can also use Alt+Z to activate zapper mode (or configure an alternate shortcut key in the extension settings).
 
+v0.2.0 is out: Now works even better and on sites with iframes.
+
 
 Credits to https://github.com/gorhill/uBlock for the screen-unlocking functionality. ;D
 
