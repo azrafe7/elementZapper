@@ -28,6 +28,7 @@
 
   let options = {
     container: null,
+    iFrameId: 'Element Zapper Picker Frame',
     enabled: false,
     selectors: "*",
     background: HIGHLIGHT_BG_COLOR,
@@ -42,6 +43,7 @@
 
   // create "disabled" elementPicker on page load
   let elementPicker = new ElementPicker(options);
+  
   elementPicker.action = {
     trigger: "mouseup",
 
@@ -147,5 +149,49 @@
   }
   keyEventContainer.addEventListener('keyup', (e) => updateCursor({keyUp: true, event: e}), true);
   keyEventContainer.addEventListener('keydown', (e) => updateCursor({keyUp: false, event: e}), true);
+  
+  // MIT Licensed
+// Author: jwilson8767
+
+  /**
+   * Waits for an element satisfying selector to exist, then resolves promise with the element.
+   * Useful for resolving race conditions.
+   *
+   * @param selector
+   * @returns {Promise}
+   */
+  function elementReady(selector) {
+    return new Promise((resolve, reject) => {
+      let el = document.querySelector(selector);
+      if (el) {
+        resolve(el); 
+        return;
+      }
+      new MutationObserver((mutationRecords, observer) => {
+        // Query for elements matching the specified selector
+        Array.from(document.querySelectorAll(selector)).forEach((element) => {
+          resolve(element);
+          //Once we have resolved we don't need the observer anymore.
+          observer.disconnect();
+        });
+      })
+        .observe(document.documentElement, {
+          childList: true,
+          subtree: true
+        });
+    });
+  }
+
+  if (document.URL.match(/ansa.it/)) {
+    const selector = '#iubenda-cs-banner';
+    console.log("Waiting for " + selector + "...");
+    elementReady(selector).then((element) => {
+      console.log("Removing " + selector + "...", element);
+      setTimeout(() => {
+        unlockScreen(element);
+        element.remove();
+      }, 1000);
+    });
+  }
   
 })();
