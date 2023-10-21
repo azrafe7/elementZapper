@@ -68,7 +68,7 @@
 
 
   function getStyleValue(elem, prop) {
-    const style = window.getComputedStyle(elem);
+    const style = elem ? window.getComputedStyle(elem) : null;
     return style ? style[prop] : '';
   }
   
