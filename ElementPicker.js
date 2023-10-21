@@ -8,7 +8,7 @@
     }
 
     class ElementPicker {
-        VERSION = "0.2.2";
+        VERSION = "0.2.4";
         
         constructor(options) {
             // MUST create hover box first before applying options
@@ -82,6 +82,7 @@
                 overflow: hidden;
                 z-index: 2147483647 !important;
                 margin: 0px;
+                border: 0px;
                 color-scheme: none;
               `;
               
@@ -149,8 +150,10 @@
                     this.hoverBox.style.outline = this.outlineWidth + "px solid " + this.outlineColor;
                     
                     // need scrollX and scrollY to account for scrolling
-                    this.hoverBox.style.top = (target.tagName === 'HTML' ? 0 : targetOffset.top) + (this.iframe ? 0 : window.scrollY) - this.borderWidth + "px";
-                    this.hoverBox.style.left = (target.tagName === 'HTML' ? 0 : targetOffset.left) + (this.iframe ? 0 : window.scrollX) - this.borderWidth + "px";
+                    const top = (target.tagName === 'HTML' ? 0 : targetOffset.top) + (this.iframe ? 0 : window.scrollY);
+                    const left = (target.tagName === 'HTML' ? 0 : targetOffset.left) + (this.iframe ? 0 : window.scrollX);
+                    this.hoverBox.style.top = top - this.borderWidth + "px";
+                    this.hoverBox.style.left = left - this.borderWidth + "px";
 
                     // const infoText = `${targetText} ${targetWidth} × ${targetHeight}`;
                     const attrs = Array.from(target.attributes, ({name, value}) => (name + '=' + value));
@@ -167,8 +170,8 @@
                       targetOffsetLeft: targetOffset.left,
                       scrollX: window.scrollX,
                       scrollY: window.scrollY,
-                      top: targetOffset.top + window.scrollY,
-                      left: targetOffset.left + window.scrollX,
+                      top: top, // targetOffset.top + window.scrollY,
+                      left: left, // targetOffset.left + window.scrollX,
                       clientRect: targetOffset,
                       text: infoText,
                     }
