@@ -1,5 +1,10 @@
  # CHANGELOG
 
+ ### v0.2.4 (22 Oct 2023)
+ - update picker to v0.2.4
+ - handle top html element
+ - support more pages
+
  ### v0.2.0 (15 Oct 2023)
  - inject in top frame only
  - use an iframe overlay when enabled
