@@ -2,7 +2,7 @@
 
 (async () => {
 
-  const DEBUG = false;
+  const DEBUG = true;
   let debug = {
     log: DEBUG ? console.log.bind(console) : () => {} // log or NO_OP
   }
@@ -43,6 +43,9 @@
 
   // create "disabled" elementPicker on page load
   let elementPicker = new ElementPicker(options);
+  let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(elementPicker.container);
+  // let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(document.body);
+  console.log(pickerPanelContainer);
   
   elementPicker.action = {
     trigger: "mouseup",
@@ -59,13 +62,52 @@
           data: null,
         });
         unlockScreenIfLocked(target);
-        target.remove();
+        target.style.setProperty('display', 'none', 'important');
+        debug.log("[ElementZapper:CTX] style:", target?.style);
+        // target?.remove();
       }
       
       elementPicker.enabled = continuePicking && event.button == 0;
     })
   }
 
+  async function addPickerPanelTo(container) {
+    let response = await fetch(chrome.runtime.getURL('/pickerPanel.html'));
+
+    if (!response.ok) {
+      console.error("[ElementZapper:CTX] ERROR", err);
+    }
+
+    let text = await response.text();
+    
+    container.insertAdjacentHTML('beforeend', text);
+    let pickerPanelContainer = container.lastElementChild;
+    let pickerPanelElement = container.querySelector("#panel");
+    const rootNode = container.getRootNode();
+
+    /* dragmove.js
+    const dragmoveJsPath = chrome.runtime.getURL('/dragmove.js');
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = dragmoveJsPath;
+    rootNode.head.appendChild(script);*/
+
+    // css
+    const cssPath = chrome.runtime.getURL('/pickerPanel.css');
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = cssPath;
+    rootNode.head.appendChild(link);
+    
+    dragmove(pickerPanelElement, pickerPanelContainer.querySelector(".drag-handle"), 
+      (startEvent) => console.log("start", startEvent), 
+      (endEvent) => console.log("end", endEvent)
+    );
+    console.log(pickerPanelContainer, pickerPanelContainer.querySelector(".drag-handle"));
+    
+    return [pickerPanelContainer, pickerPanelElement];
+  }
 
   function getStyleValue(elem, prop) {
     const style = elem ? window.getComputedStyle(elem) : null;
@@ -118,7 +160,8 @@
     const { event, data } = msg;
 
     if (event === "enablePicker") {
-      elementPicker.enabled = true;
+      const enabled = !elementPicker.enabled;
+      elementPicker.enabled = enabled;
       elementPicker.hoverBox.style.cursor = CURSORS[0];
     } else if (event === "unlock") {
       debug.log('unlock');

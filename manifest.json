@@ -10,9 +10,15 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["ElementPicker.js", "contentScript.js"],
+      "js": ["ElementPicker.js", "contentScript.js", "dragmove.js"],
       "css": ["ElementPicker.css"],
       "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pickerPanel.html", "pickerPanel.css"],
+      "matches": ["<all_urls>"]
     }
   ],
   "cross_origin_opener_policy": {
