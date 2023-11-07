@@ -7,6 +7,9 @@
   let _loaded = false;
   let _callbacks = [];
   const _isTouch = window.ontouchstart !== undefined;
+  
+  // target margins
+  const margins = {};  
 
   const dragmove = function(target, handle, onStart, onEnd) {
     // Register a global event to capture mouse moves (once).
@@ -42,6 +45,11 @@
         c = e.touches[0];
       }
 
+      // compute margins (used later if dragBoundary is set)
+      const computedStyle = getComputedStyle(target);
+      ['top', 'left', 'right', 'bottom'].forEach(sideStr => margins[sideStr] = parseInt(computedStyle['margin-' + sideStr]));
+      console.log(margins);
+      
       isMoving = true;
       startX = target.offsetLeft - c.clientX;
       startY = target.offsetTop - c.clientY;
@@ -78,8 +86,8 @@
         // lastX = Math.min(window.innerWidth - target.offsetWidth, Math.max(0, lastX));
         // lastY = Math.min(window.innerHeight - target.offsetHeight, Math.max(0, lastY));
         
-        lastX = Math.min(document.body.clientWidth - target.offsetWidth, Math.max(0, lastX));
-        lastY = Math.min(document.body.clientHeight - target.offsetHeight, Math.max(0, lastY));
+        lastX = Math.min(document.body.clientWidth - target.offsetWidth - (margins['right'] + margins['left']), Math.max(0, lastX));
+        lastY = Math.min(document.body.clientHeight - target.offsetHeight - (margins['top'] + margins['bottom']), Math.max(0, lastY));
       }
 
       target.style.left = lastX + "px";
