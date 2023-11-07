@@ -51,7 +51,7 @@
     trigger: "mouseup",
 
     callback: ((event, target) => {
-      // debug.log("[WebClipElement:CTX] event:", event);
+      // debug.log("[ElementZapper:CTX] event:", event);
       let continuePicking = event.shiftKey;
       if (event.button == 0) { // only proceed if left mouse button was pressed
         debug.log("[ElementZapper:CTX] target:", target);
@@ -100,11 +100,11 @@
     link.href = cssPath;
     rootNode.head.appendChild(link);
     
-    dragmove(pickerPanelElement, pickerPanelContainer.querySelector(".drag-handle"), 
+    dragmove(pickerPanelElement, pickerPanelElement.querySelector(".drag-handle"), 
       (startEvent) => console.log("start", startEvent), 
       (endEvent) => console.log("end", endEvent)
     );
-    console.log(pickerPanelContainer, pickerPanelContainer.querySelector(".drag-handle"));
+    console.log(pickerPanelContainer, pickerPanelElement.querySelector(".drag-handle"));
     
     return [pickerPanelContainer, pickerPanelElement];
   }
