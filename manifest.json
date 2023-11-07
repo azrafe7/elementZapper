@@ -12,7 +12,8 @@
       "matches": ["<all_urls>"],
       "js": ["ElementPicker.js", "contentScript.js", "dragmove.js"],
       "css": ["ElementPicker.css"],
-      "all_frames": false
+      "all_frames": false,
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
