@@ -192,9 +192,10 @@
   }
   keyEventContainer.addEventListener('keyup', (e) => updateCursor({keyUp: true, event: e}), true);
   keyEventContainer.addEventListener('keydown', (e) => updateCursor({keyUp: false, event: e}), true);
-  
+
+    
   // MIT Licensed
-// Author: jwilson8767
+  // Author: jwilson8767
 
   /**
    * Waits for an element satisfying selector to exist, then resolves promise with the element.
