@@ -107,6 +107,57 @@
               this._detectMouseMove(fakeEvent);
             }
             
+            this.trigger = (e) => {
+              let target = this.hoverInfo?.element;
+              let evt = this._actionEvent ?? e;
+              console.log("TRIGGERED", evt, target, this.action.callback);
+              if (this.action.callback) {
+                this.action.callback(evt, target);
+              }
+              this._triggered = false;
+              this._actionEvent = null;
+            }
+            
+            this.highlight = (target) => {
+              const targetOffset = target.getBoundingClientRect();
+              const targetHeight = targetOffset.height;
+              const targetWidth = targetOffset.width;
+
+              this.hoverBox.style.width = targetWidth + this.borderWidth * 2 + "px";
+              this.hoverBox.style.height = targetHeight + this.borderWidth * 2 + "px";
+              
+              this.hoverBox.style.outline = this.outlineWidth + "px solid " + this.outlineColor;
+              
+              // need scrollX and scrollY to account for scrolling
+              const top = (target.tagName === 'HTML' ? 0 : targetOffset.top) + (this.iframe ? 0 : window.scrollY);
+              const left = (target.tagName === 'HTML' ? 0 : targetOffset.left) + (this.iframe ? 0 : window.scrollX);
+              this.hoverBox.style.top = top - this.borderWidth + "px";
+              this.hoverBox.style.left = left - this.borderWidth + "px";
+
+              // const infoText = `${targetText} ${targetWidth} × ${targetHeight}`;
+              const attrs = Array.from(target.attributes, ({name, value}) => (name + '=' + value));
+              const ellipsizedAttrsText = attrs.length > 0 ? ' ' + ellipsize(attrs.join(' '), 20) : '';
+              const infoText = `<${target.tagName.toUpperCase()}${ellipsizedAttrsText}> ${targetWidth} × ${targetHeight}`;
+              this.hoverBoxInfo.innerText = infoText;
+
+              this.hoverInfo = {
+                element: target,
+                tagName: target.tagName.toUpperCase(),
+                width: targetWidth,
+                height: targetHeight,
+                targetOffsetTop: targetOffset.top,
+                targetOffsetLeft: targetOffset.left,
+                scrollX: window.scrollX,
+                scrollY: window.scrollY,
+                top: top, // targetOffset.top + window.scrollY,
+                left: left, // targetOffset.left + window.scrollX,
+                clientRect: targetOffset,
+                text: infoText,
+              }
+
+              // console.log(this.hoverInfo);
+            }
+            
             this._detectMouseMove = (e) => {
                 this._lastClientX = e.clientX;
                 this._lastClientY = e.clientY;
@@ -140,49 +191,11 @@
                     } else {
                         this._previousTarget = target;
                     }
-                    const targetOffset = target.getBoundingClientRect();
-                    const targetHeight = targetOffset.height;
-                    const targetWidth = targetOffset.width;
-
-                    this.hoverBox.style.width = targetWidth + this.borderWidth * 2 + "px";
-                    this.hoverBox.style.height = targetHeight + this.borderWidth * 2 + "px";
-                    
-                    this.hoverBox.style.outline = this.outlineWidth + "px solid " + this.outlineColor;
-                    
-                    // need scrollX and scrollY to account for scrolling
-                    const top = (target.tagName === 'HTML' ? 0 : targetOffset.top) + (this.iframe ? 0 : window.scrollY);
-                    const left = (target.tagName === 'HTML' ? 0 : targetOffset.left) + (this.iframe ? 0 : window.scrollX);
-                    this.hoverBox.style.top = top - this.borderWidth + "px";
-                    this.hoverBox.style.left = left - this.borderWidth + "px";
-
-                    // const infoText = `${targetText} ${targetWidth} × ${targetHeight}`;
-                    const attrs = Array.from(target.attributes, ({name, value}) => (name + '=' + value));
-                    const ellipsizedAttrsText = attrs.length > 0 ? ' ' + ellipsize(attrs.join(' '), 20) : '';
-                    const infoText = `<${target.tagName.toUpperCase()}${ellipsizedAttrsText}> ${targetWidth} × ${targetHeight}`;
-                    this.hoverBoxInfo.innerText = infoText;
-
-                    this.hoverInfo = {
-                      element: target,
-                      tagName: target.tagName.toUpperCase(),
-                      width: targetWidth,
-                      height: targetHeight,
-                      targetOffsetTop: targetOffset.top,
-                      targetOffsetLeft: targetOffset.left,
-                      scrollX: window.scrollX,
-                      scrollY: window.scrollY,
-                      top: top, // targetOffset.top + window.scrollY,
-                      left: left, // targetOffset.left + window.scrollX,
-                      clientRect: targetOffset,
-                      text: infoText,
-                    }
-
-                    // console.log(this.hoverInfo);
+                    this.highlight(target);
                     
                     if (this._triggered && this.action.callback) {
                         // console.log("TRIGGERED");
-                        this.action.callback(this._actionEvent, target);
-                        this._triggered = false;
-                        this._actionEvent = null;
+                        this.trigger(e);
                     }
                 } else {
                     // console.log("hiding hover box...");
