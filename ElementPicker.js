@@ -113,6 +113,7 @@
               console.log("TRIGGERED", evt, target, this.action.callback);
               if (this.action.callback) {
                 this.action.callback(evt, target);
+                this._redetectMouseMove(); // call it again as the action may have altered the page
               }
               this._triggered = false;
               this._actionEvent = null;
@@ -326,9 +327,6 @@
                         this._actionEvent = evt;
                         this._triggered = true;
                         this._redetectMouseMove();
-                        if (this.action?.callback) {
-                          this._redetectMouseMove(); // call it again as the action may have altered the page
-                        }
                     }
                     this.container.addEventListener(this.action.trigger, this._triggerListener);
                 } else if (value.trigger !== undefined || value.callback !== undefined){ // allow empty action object
