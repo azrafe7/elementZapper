@@ -53,7 +53,9 @@
     callback: ((event, target) => {
       // debug.log("[ElementZapper:CTX] event:", event);
       let continuePicking = event.shiftKey;
-      if (event.button == 0) { // only proceed if left mouse button was pressed
+      let alertSelector = event.ctrlKey;
+      event.triggered = event.triggered ?? event.button == 0; // only proceed if left mouse button was pressed or "triggered" was set
+      if (event.triggered) { 
         debug.log("[ElementZapper:CTX] target:", target);
         debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
         window.focus();
@@ -62,12 +64,19 @@
           data: null,
         });
         unlockScreenIfLocked(target);
-        target.style.setProperty('display', 'none', 'important');
+        if (!alertSelector) {
+          target.style.setProperty('display', 'none', 'important');
+        } else {
+          let selectorElement = pickerPanelElement.querySelector("#selector");
+          let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
+          selectorElement.innerHTML = elemToSelector(target);
+          compactSelectorElement.innerHTML = elemToSelector(target, true);
+        }
         debug.log("[ElementZapper:CTX] style:", target?.style);
         // target?.remove();
       }
       
-      elementPicker.enabled = continuePicking && event.button == 0;
+      elementPicker.enabled = continuePicking && event.triggered;
     })
   }
 
@@ -176,6 +185,17 @@
     if (e.keyCode == 27 && elementPicker.enabled) {
       elementPicker.enabled = false;
       debug.log("[ElementZapper:CTX] user aborted");
+    }
+  }, true);
+  
+  keyEventContainer.addEventListener('keydown', function(e) {
+    if (e.keyCode == 32 && elementPicker.enabled) {
+      let target = elementPicker.hoverInfo.element;
+      debug.log("[ElementZapper:CTX] space-clicked target:", target);
+      e.preventDefault();
+      e.triggered = true; // checked inside action callback
+      elementPicker.trigger(e);
+      return false;
     }
   }, true);
 
