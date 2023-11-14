@@ -58,11 +58,11 @@
       if (event.triggered) { 
         debug.log("[ElementZapper:CTX] target:", target);
         debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
-        window.focus();
-        chrome.runtime.sendMessage({
+        // window.focus();
+        /* chrome.runtime.sendMessage({
           event: "requestUnlock",
           data: null,
-        });
+        }); */
         unlockScreenIfLocked(target);
         if (!alertSelector) {
           target.style.setProperty('display', 'none', 'important');
@@ -156,10 +156,10 @@
     }
     if (maybeScrollLocked) {
       debug.log('locked', document);
-      chrome.runtime.sendMessage({
+      /* chrome.runtime.sendMessage({
         event: "requestUnlock",
         data: null
-      });
+      }); */
       unlockScreen(elemToRemove);
     }
   };
@@ -195,7 +195,6 @@
       e.preventDefault();
       e.triggered = true; // checked inside action callback
       elementPicker.trigger(e);
-      return false;
     }
   }, true);
 
