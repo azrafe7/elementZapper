@@ -1,7 +1,11 @@
 // create css selector from element
 
 // adapted from https://stackoverflow.com/questions/42184322/javascript-get-element-unique-selector/67840046#67840046
-function elemToSelector(elem, compact=false) {
+function elemToSelector(elem, options={}) {
+  const defaults = {compact:false, fullPath:false};
+  const mergedOptions = {...defaults, ...options};
+  const {compact, fullPath} = mergedOptions;
+  console.log(options, compact, fullPath);
   const tagName = elem.tagName.toLowerCase();
   const id = elem.getAttribute('id') ?? '';
   const parentNode = elem.parentNode;
@@ -14,8 +18,8 @@ function elemToSelector(elem, compact=false) {
  
   if (tagName === 'html') return 'html';
 
-  let str = hasId ? '' : tagName;
-  if (hasId) {
+  let str = (hasId && !fullPath) ? '' : tagName;
+  if (hasId && !fullPath) {
     if (id.match(/^[a-zA-Z]/)) {
       str += '#' + jq(id);
     } else {
@@ -32,12 +36,14 @@ function elemToSelector(elem, compact=false) {
     }
   }
 
-  if (elem.classList?.length > 0)  {
+  if (elem.classList?.length > 0 && !fullPath)  {
     let classes = Array.from(elem.classList.values()).map((cls) => { return jq(cls) });
     str += "." + classes.join('.');
   }
   
-  if (!hasId && parentElement?.childElementCount > 1 || (hasId && !uniqueIds)) {
+  console.log(str, elem);
+  
+  if ((fullPath && parentElement?.childElementCount > 1) || (!hasId && parentElement?.childElementCount > 1 || (hasId && !uniqueIds))) {
     let similarSiblings = Array.from(parentElement.children).filter((e) => { return e.matches(str); });
     // console.log(str, similarSiblings.length);
     if (!compact || (compact && (similarSiblings.length > 1 || !uniqueIds))) {
@@ -49,7 +55,7 @@ function elemToSelector(elem, compact=false) {
     }
   }
   
-  return `${elemToSelector(parentNode, compact)} > ${str}`;
+  return `${elemToSelector(parentNode, options)} > ${str}`;
 }
 
 // https://stackoverflow.com/questions/70579/html-valid-id-attribute-values
