@@ -34,6 +34,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } else if (info.menuItemId === "ElementZapper_logStorage") {
     const items = await storage.get(null);
     console.log("[ElementZapper:BG] log storage...", items);
+    let [activeTab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    chrome.tabs.sendMessage(
+      tab.id,
+      {
+        event: "log",
+        data: items,
+      }
+    );
   }
 });
 

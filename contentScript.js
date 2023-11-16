@@ -69,6 +69,20 @@
         const compactSelector = elemToSelector(target, true);
         if (!alertSelector) {
           target.style.setProperty('display', 'none', 'important');
+          // target?.remove();
+
+          const currentUrl = window.location.href;
+          let urlTable = {};
+          storage.get({urlTable: {}}, (item) => {
+            urlTable = item.urlTable;
+            let selectors = urlTable[currentUrl] ?? [];
+            if (!(selectors.includes(compactSelector))) {
+              selectors.push(compactSelector);
+            }
+            urlTable[currentUrl] = selectors;
+            storage.set({urlTable:urlTable});
+            console.log(urlTable);
+          });
         } else {
           let selectorElement = pickerPanelElement.querySelector("#selector");
           let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
@@ -76,20 +90,6 @@
           compactSelectorElement.innerHTML = compactSelector;
         }
         debug.log("[ElementZapper:CTX] style:", target?.style);
-        
-        const currentUrl = window.location.href;
-        let urlTable = {};
-        storage.get({urlTable: {}}, (item) => {
-          urlTable = item.urlTable;
-          let selectors = urlTable[currentUrl] ?? [];
-          if (!(selectors.includes(compactSelector))) {
-            selectors.push(compactSelector);
-          }
-          urlTable[currentUrl] = selectors;
-          storage.set({urlTable:urlTable});
-          console.log(urlTable);
-        });
-        // target?.remove();
       }
       
       elementPicker.enabled = continuePicking && event.triggered;
@@ -191,6 +191,8 @@
     } else if (event === "unlock") {
       debug.log('unlock');
       unlockScreen();
+    } else if (event === "log") {
+      debug.log(data);
     }
   });
 
@@ -228,11 +230,13 @@
   keyEventContainer.addEventListener('keyup', (e) => updateCursor({keyUp: true, event: e}), true);
   keyEventContainer.addEventListener('keydown', (e) => updateCursor({keyUp: false, event: e}), true);
 
-    
-  // MIT Licensed
-  // Author: jwilson8767
 
   /**
+   * elementsReady() adapted from jwilson8767 elementReady() code
+   *
+   * MIT Licensed
+   * Author: jwilson8767
+   *
    * Waits for an element satisfying selector to exist, then resolves promise with the element.
    * Useful for resolving race conditions.
    *
@@ -280,14 +284,17 @@
     // if (Object.keys(urlTable).includes(currentUrl)) {
     let selectors = urlTable[currentUrl] ?? [];
     const numSelectors = selectors.length;
-    setBadge(numSelectors > 0 ? '.' : '');
+    const numSelectorsStr = numSelectors > 99 ? '99+' : '' + numSelectors;
+    setBadge('0/' + numSelectorsStr);
+    // setBadge(numSelectors > 0 ? '.' : '');
     if (numSelectors > 0) {
       let bigSelector = selectors.join(', ');
       console.log(bigSelector);
       
       elementsReady(bigSelector).then((elements) => {
         appliedSelectors = elements.length;
-        setBadge(appliedSelectors > 99 ? '99+' : '' + appliedSelectors);
+        const appliedSelectorsStr = appliedSelectors > 99 ? '99+' : '' + appliedSelectors;
+        setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
         for (const element of elements) {
           console.log("Removing " + bigSelector + "...", element);
           element.style.setProperty('outline', '1px solid green', 'important');
