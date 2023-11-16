@@ -3,7 +3,7 @@
   "version": "0.2.4",
   "description": "Zap/remove any element",
   "manifest_version": 3,
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "storage", "contextMenus"],
   "background": {
     "service_worker": "background.js"
   },

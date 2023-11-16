@@ -10,6 +10,8 @@
   let manifest = chrome.runtime.getManifest();
   console.log(manifest.name + " v" + manifest.version);
 
+  const storage = chrome.storage.local;
+
   const HIGHLIGHT_RED = "rgba(250, 70, 60, 0.5)";
   const HIGHLIGHT_GREEN = "rgba(17, 193, 12, 0.5)";
   const HIGHLIGHT_BG_COLOR = HIGHLIGHT_RED;
@@ -64,15 +66,29 @@
           data: null,
         }); */
         unlockScreenIfLocked(target);
+        const compactSelector = elemToSelector(target, true);
         if (!alertSelector) {
           target.style.setProperty('display', 'none', 'important');
         } else {
           let selectorElement = pickerPanelElement.querySelector("#selector");
           let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
           selectorElement.innerHTML = elemToSelector(target);
-          compactSelectorElement.innerHTML = elemToSelector(target, true);
+          compactSelectorElement.innerHTML = compactSelector;
         }
         debug.log("[ElementZapper:CTX] style:", target?.style);
+        
+        const currentUrl = window.location.href;
+        let urlTable = {};
+        storage.get({urlTable: {}}, (item) => {
+          urlTable = item.urlTable;
+          let selectors = urlTable[currentUrl] ?? [];
+          if (!(selectors.includes(compactSelector))) {
+            selectors.push(compactSelector);
+          }
+          urlTable[currentUrl] = selectors;
+          storage.set({urlTable:urlTable});
+          console.log(urlTable);
+        });
         // target?.remove();
       }
       
@@ -223,20 +239,24 @@
    * @param selector
    * @returns {Promise}
    */
-  function elementReady(selector) {
+  function elementsReady(selector) {
     return new Promise((resolve, reject) => {
-      let el = document.querySelector(selector);
-      if (el) {
-        resolve(el); 
-        return;
+      let elements = Array.from(document.querySelectorAll(selector));
+      if (elements.length > 0) {
+        resolve(elements);
       }
+      // let el = document.querySelector(selector);
+      // if (el) {
+        // resolve(el); 
+        //return;
       new MutationObserver((mutationRecords, observer) => {
         // Query for elements matching the specified selector
-        Array.from(document.querySelectorAll(selector)).forEach((element) => {
-          resolve(element);
+        let elements = Array.from(document.querySelectorAll(selector));
+        if (elements.length > 0) {
+          resolve(elements);
           //Once we have resolved we don't need the observer anymore.
           observer.disconnect();
-        });
+        };
       })
         .observe(document.documentElement, {
           childList: true,
@@ -245,15 +265,56 @@
     });
   }
 
+  function setBadge(text) {
+    chrome.runtime.sendMessage({
+      event: "setBadge",
+      data: text,
+    });
+  }
+
+  const currentUrl = window.location.href;
+  let appliedSelectors = 0;
+  let urlTable = {};
+  storage.get({urlTable: {}}, (item) => {
+    urlTable = item.urlTable;
+    // if (Object.keys(urlTable).includes(currentUrl)) {
+    let selectors = urlTable[currentUrl] ?? [];
+    const numSelectors = selectors.length;
+    setBadge(numSelectors > 0 ? '.' : '');
+    if (numSelectors > 0) {
+      let bigSelector = selectors.join(', ');
+      console.log(bigSelector);
+      
+      elementsReady(bigSelector).then((elements) => {
+        appliedSelectors = elements.length;
+        setBadge(appliedSelectors > 99 ? '99+' : '' + appliedSelectors);
+        for (const element of elements) {
+          console.log("Removing " + bigSelector + "...", element);
+          element.style.setProperty('outline', '1px solid green', 'important');
+          element.style.setProperty('background-color', 'lightgreen', 'important');
+          setTimeout(() => {
+            // element.style.setProperty('display', 'none', 'important');
+            // unlockScreen(element);
+            // element.remove();
+          }, 0);
+        }
+        console.log('selectors ' + numSelectors, selectors);
+      });
+    }
+  });
+
+
   if (document.URL.match(/ansa.it/)) {
     const selector = '#iubenda-cs-banner';
     console.log("Waiting for " + selector + "...");
-    elementReady(selector).then((element) => {
-      console.log("Removing " + selector + "...", element);
-      setTimeout(() => {
-        unlockScreen(element);
-        element.remove();
-      }, 1000);
+    elementsReady(selector).then((elements) => {
+      for (const element of elements) {
+        console.log("Removing " + selector + "...", element);
+        setTimeout(() => {
+          unlockScreen(element);
+          element.remove();
+        }, 1000);
+      }
     });
   }
   
