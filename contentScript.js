@@ -66,7 +66,7 @@
           data: null,
         }); */
         unlockScreenIfLocked(target);
-        const compactSelector = elemToSelector(target, {fullPath:true});
+        const compactSelector = elemToSelector(target, {compact:true, fullPath:true});
         if (!alertSelector) {
           target.style.setProperty('display', 'none', 'important');
           // target?.remove();
@@ -324,6 +324,8 @@
           element.style.setProperty('outline', '1px solid green', 'important');
           element.style.setProperty('outline-offset', '-1px', 'important');
           element.style.setProperty('background-color', 'lightgreen', 'important');
+          element.style.setProperty('display', 'none', 'important');
+          unlockScreen(element);
           setTimeout(() => {
             // element.style.setProperty('display', 'none', 'important');
             // unlockScreen(element);
@@ -337,19 +339,4 @@
     }
   });
 
-  /*
-  if (document.URL.match(/ansa.it/)) {
-    const selector = '#iubenda-cs-banner';
-    console.log("Waiting for " + selector + "...");
-    elementsReady(selector).then((elements) => {
-      for (const element of elements) {
-        console.log("Removing " + selector + "...", element);
-        setTimeout(() => {
-          unlockScreen(element);
-          element.remove();
-        }, 1000);
-      }
-    });
-  }*/
-  
 })();
