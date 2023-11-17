@@ -5,7 +5,7 @@ function elemToSelector(elem, options={}) {
   const defaults = {compact:false, fullPath:false};
   const mergedOptions = {...defaults, ...options};
   const {compact, fullPath} = mergedOptions;
-  console.log(options, compact, fullPath);
+  // console.log(options, compact, fullPath);
   const tagName = elem.tagName.toLowerCase();
   const id = elem.getAttribute('id') ?? '';
   const parentNode = elem.parentNode;
@@ -41,7 +41,7 @@ function elemToSelector(elem, options={}) {
     str += "." + classes.join('.');
   }
   
-  console.log(str, elem);
+  // console.log(str, elem);
   
   if ((fullPath && parentElement?.childElementCount > 1) || (!hasId && parentElement?.childElementCount > 1 || (hasId && !uniqueIds))) {
     let similarSiblings = Array.from(parentElement.children).filter((e) => { return e.matches(str); });
