@@ -14,6 +14,11 @@ function createContextMenu() {
       contexts: ["action"],
     });
     chrome.contextMenus.create({
+      id: "ElementZapper_clearForThisUrl",
+      title: "Reset for this url...",
+      contexts: ["action"],
+    });
+    chrome.contextMenus.create({
       id: "ElementZapper_logStorage",
       title: "Log storage...",
       contexts: ["action"],
@@ -35,6 +40,21 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const items = await storage.get(null);
     console.log("[ElementZapper:BG] log storage...", items);
     let [activeTab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    chrome.tabs.sendMessage(
+      tab.id,
+      {
+        event: "log",
+        data: items,
+      }
+    );
+  } else if (info.menuItemId === "ElementZapper_clearForThisUrl") {
+    const items = await storage.get(null);
+    let [activeTab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    console.log("[ElementZapper:BG] reset for this url...", activeTab.url);
+    if (items?.urlTable && items?.urlTable[activeTab.url]) {
+      delete items.urlTable[activeTab.url];
+    }
+    storage.set(items);
     chrome.tabs.sendMessage(
       tab.id,
       {
