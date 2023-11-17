@@ -3,8 +3,8 @@
 // adapted from https://stackoverflow.com/questions/42184322/javascript-get-element-unique-selector/67840046#67840046
 function elemToSelector(elem, options={}) {
   const defaults = {compact:false, fullPath:false};
-  const mergedOptions = {...defaults, ...options};
-  const {compact, fullPath} = mergedOptions;
+  options = {...defaults, ...options};
+  const {compact, fullPath} = options;
   // console.log(options, compact, fullPath);
   const tagName = elem.tagName.toLowerCase();
   const id = elem.getAttribute('id') ?? '';
@@ -66,13 +66,13 @@ function jq(myid) {
 
 // test all elements on page
 function testElemToSelector() {
-  const COMPACT = true;
+  const options = {compact:true};
   let elements = document.querySelectorAll('*');
-  console.log('compact:', COMPACT);
+  console.log('options:', options);
   console.log(elements.length + ' elements');
   let allGood = true;
   for (el of elements) {
-    let selector = elemToSelector(el, COMPACT);
+    let selector = elemToSelector(el, options);
     let first = document.querySelector(selector);
     let findings = document.querySelectorAll(selector);
     let ok = (first === el || findings.length === 1);
