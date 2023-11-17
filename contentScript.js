@@ -346,6 +346,7 @@
           element.classList.add('element-zapper');
           console.log("Removing " + selector + "...", element);
           element.style.setProperty('outline', '1px solid green', 'important');
+          element.style.setProperty('outline-offset', '-1px', 'important');
           element.style.setProperty('background-color', 'lightgreen', 'important');
           setTimeout(() => {
             // element.style.setProperty('display', 'none', 'important');
