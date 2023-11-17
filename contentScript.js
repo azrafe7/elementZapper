@@ -341,12 +341,16 @@
       elementsReady(bigSelector, callback).then(callback); */
 
     if (numSelectors > 0) {
-      const callback = (element, selector) => {
+      const callback = async (element, selector) => {
         let joinedSelectors = selectors.join(', ');
         appliedSelectors = document.querySelectorAll(joinedSelectors)?.length ?? 0;
         const appliedSelectorsStr = appliedSelectors > 99 ? '99+' : '' + appliedSelectors;
-        setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
+        // setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
 
+        await chrome.runtime.sendMessage({
+          event: "setBadge",
+          data: appliedSelectorsStr + '/' + numSelectorsStr,
+        });
         if (element.classList.contains('element-zapper')) console.log("CALLBACK but SKIPPED");
         if (!element.classList.contains('element-zapper')) {   
           element.classList.add('element-zapper');
