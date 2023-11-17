@@ -286,29 +286,6 @@
     });
   }
 
-  function elementReady(selector, callback, once=false) {
-    let element = document.querySelector(selector);
-    if (element) {
-      callback(element, selector);
-    }
-    let mutObserver = new MutationObserver((mutationRecords, observer) => {
-      // Query for elements matching the specified selector
-      let element = document.querySelector(selector);
-      if (element) {
-        callback(element, selector);
-      }
-      
-      if (once) {
-        observer.disconnect();
-      }
-    });
-    mutObserver.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
-  }
-
-
   function setBadge(text) {
     chrome.runtime.sendMessage({
       event: "setBadge",
@@ -321,7 +298,6 @@
   let urlTable = {};
   storage.get({urlTable: {}}, (item) => {
     urlTable = item.urlTable;
-    // if (Object.keys(urlTable).includes(currentUrl)) {
     let selectors = urlTable[currentUrl] ?? [];
     const numSelectors = selectors.length;
     const numSelectorsStr = numSelectors > 99 ? '99+' : '' + numSelectors;
@@ -359,35 +335,9 @@
       
       elementsReady(selectors, callback, {once:true, filterFn: (elem) => !elem.classList.contains('element-zapper')});
     }
-
-    /*
-    if (numSelectors > 0) {
-      const callback = async (element, selector) => {
-        let joinedSelectors = selectors.join(', ');
-        appliedSelectors = document.querySelectorAll(joinedSelectors)?.length ?? 0;
-        const appliedSelectorsStr = appliedSelectors > 99 ? '99+' : '' + appliedSelectors;
-        // setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
-
-        await chrome.runtime.sendMessage({
-          event: "setBadge",
-          data: appliedSelectorsStr + '/' + numSelectorsStr,
-        });
-        if (element.classList.contains('element-zapper')) console.log("CALLBACK but SKIPPED");
-        if (!element.classList.contains('element-zapper')) {   
-          element.classList.add('element-zapper');
-          console.log("Removing " + selector + "...", element);
-          element.style.setProperty('outline', '1px solid green', 'important');
-          element.style.setProperty('background-color', 'lightgreen', 'important');
-        }
-      }
-      
-      for (let selector of selectors) {
-        elementReady(selector, callback, false);
-      }
-    } */
   });
 
-
+  /*
   if (document.URL.match(/ansa.it/)) {
     const selector = '#iubenda-cs-banner';
     console.log("Waiting for " + selector + "...");
@@ -400,6 +350,6 @@
         }, 1000);
       }
     });
-  }
+  }*/
   
 })();
