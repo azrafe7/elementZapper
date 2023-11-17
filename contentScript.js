@@ -66,7 +66,7 @@
           data: null,
         }); */
         unlockScreenIfLocked(target);
-        const compactSelector = elemToSelector(target, true);
+        const compactSelector = elemToSelector(target, {fullPath:true});
         if (!alertSelector) {
           target.style.setProperty('display', 'none', 'important');
           // target?.remove();
@@ -243,9 +243,10 @@
    * @param selector
    * @returns {Promise}
    */
-  function elementsReady(selector) {
+  function elementsReady(selector, callback, filterElementsFn) {
     return new Promise((resolve, reject) => {
       let elements = Array.from(document.querySelectorAll(selector));
+      if (filterElementsFn) elements = filterElementsFn
       if (elements.length > 0) {
         resolve(elements);
       }
@@ -257,9 +258,10 @@
         // Query for elements matching the specified selector
         let elements = Array.from(document.querySelectorAll(selector));
         if (elements.length > 0) {
-          resolve(elements);
+          console.log('call resolve');
+          callback(elements);
           //Once we have resolved we don't need the observer anymore.
-          observer.disconnect();
+          // observer.disconnect();
         };
       })
         .observe(document.documentElement, {
@@ -268,6 +270,29 @@
         });
     });
   }
+
+  function elementReady(selector, callback, once=false) {
+    let element = document.querySelector(selector);
+    if (element) {
+      callback(element, selector);
+    }
+    let mutObserver = new MutationObserver((mutationRecords, observer) => {
+      // Query for elements matching the specified selector
+      let element = document.querySelector(selector);
+      if (element) {
+        callback(element, selector);
+      }
+      
+      if (once) {
+        observer.disconnect();
+      }
+    });
+    mutObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  }
+
 
   function setBadge(text) {
     chrome.runtime.sendMessage({
@@ -287,15 +312,20 @@
     const numSelectorsStr = numSelectors > 99 ? '99+' : '' + numSelectors;
     setBadge('0/' + numSelectorsStr);
     // setBadge(numSelectors > 0 ? '.' : '');
+
+    /*
     if (numSelectors > 0) {
       let bigSelector = selectors.join(', ');
       console.log(bigSelector);
       
-      elementsReady(bigSelector).then((elements) => {
+      const callback = (elements) => {
+        console.log('then called');
         appliedSelectors = elements.length;
         const appliedSelectorsStr = appliedSelectors > 99 ? '99+' : '' + appliedSelectors;
         setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
         for (const element of elements) {
+          if (element.classList.contains('element-zapper')) continue;
+          element.classList.add('element-zapper');
           console.log("Removing " + bigSelector + "...", element);
           element.style.setProperty('outline', '1px solid green', 'important');
           element.style.setProperty('background-color', 'lightgreen', 'important');
@@ -306,7 +336,29 @@
           }, 0);
         }
         console.log('selectors ' + numSelectors, selectors);
-      });
+      }
+      
+      elementsReady(bigSelector, callback).then(callback); */
+
+    if (numSelectors > 0) {
+      const callback = (element, selector) => {
+        let joinedSelectors = selectors.join(', ');
+        appliedSelectors = document.querySelectorAll(joinedSelectors)?.length ?? 0;
+        const appliedSelectorsStr = appliedSelectors > 99 ? '99+' : '' + appliedSelectors;
+        setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
+
+        if (element.classList.contains('element-zapper')) console.log("CALLBACK but SKIPPED");
+        if (!element.classList.contains('element-zapper')) {   
+          element.classList.add('element-zapper');
+          console.log("Removing " + selector + "...", element);
+          element.style.setProperty('outline', '1px solid green', 'important');
+          element.style.setProperty('background-color', 'lightgreen', 'important');
+        }
+      }
+      
+      for (let selector of selectors) {
+        elementReady(selector, callback, false);
+      }
     }
   });
 
