@@ -232,42 +232,57 @@
 
 
   /**
-   * elementsReady() adapted from jwilson8767 elementReady() code
+   * elementsReady() reworked from jwilson8767 elementReady() code
    *
    * MIT Licensed
-   * Author: jwilson8767
+   * Authors: jwilson8767, azrafe7
    *
-   * Waits for an element satisfying selector to exist, then resolves promise with the element.
-   * Useful for resolving race conditions.
-   *
-   * @param selector
-   * @returns {Promise}
    */
-  function elementsReady(selector, callback, filterElementsFn) {
-    return new Promise((resolve, reject) => {
-      let elements = Array.from(document.querySelectorAll(selector));
-      if (filterElementsFn) elements = filterElementsFn
-      if (elements.length > 0) {
-        resolve(elements);
-      }
-      // let el = document.querySelector(selector);
-      // if (el) {
-        // resolve(el); 
-        //return;
-      new MutationObserver((mutationRecords, observer) => {
-        // Query for elements matching the specified selector
-        let elements = Array.from(document.querySelectorAll(selector));
+  function elementsReady(selectors, callback, options={}) {
+    const defaults = {once:false, root:document.documentElement, filterFn:(elements) => {return true}};
+    options = {...defaults, ...options};
+    const root = options.root;
+    const filterFn = options.filterFn;
+    if (!Array.isArray(selectors)) selectors = [selectors];
+
+    let matchedSelectors = selectors.map(() => false);
+
+    const query = (msg) => {
+      console.log(msg);
+      for (const [index, selector] of selectors.entries()) {
+        const alreadyMatched = matchedSelectors[index];
+        if (options.once && alreadyMatched) continue;
+        let elements = Array.from(root.querySelectorAll(selector));
         if (elements.length > 0) {
-          console.log('call resolve');
-          callback(elements);
-          //Once we have resolved we don't need the observer anymore.
-          // observer.disconnect();
-        };
-      })
-        .observe(document.documentElement, {
-          childList: true,
-          subtree: true
-        });
+          matchedSelectors[index] = true;
+        }
+        if (filterFn) {
+          elements = elements.filter(filterFn);
+        }
+        if (elements.length > 0) {
+          console.log('index', index);
+          callback(elements, selector, index, matchedSelectors);
+        }
+      }
+    }
+
+    query("query from function");
+    if (options.once && matchedSelectors.every((matched) => matched)) {
+      console.log("ALL");
+      return true;
+    }
+    
+    let mutObserver = new MutationObserver((mutationRecords, observer) => {
+      query("query from observer");
+      if (options.once && matchedSelectors.every((matched) => matched)) {
+        console.log("ALL");
+        observer.disconnect();
+        return true;
+      }
+    });
+    mutObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
     });
   }
 
@@ -310,23 +325,26 @@
     let selectors = urlTable[currentUrl] ?? [];
     const numSelectors = selectors.length;
     const numSelectorsStr = numSelectors > 99 ? '99+' : '' + numSelectors;
-    setBadge('0/' + numSelectorsStr);
+    // setBadge('0/' + numSelectorsStr);
     // setBadge(numSelectors > 0 ? '.' : '');
-
-    /*
+    setBadge(numSelectors > 0 ? '0/' + numSelectorsStr : '');
+    
     if (numSelectors > 0) {
-      let bigSelector = selectors.join(', ');
-      console.log(bigSelector);
       
-      const callback = (elements) => {
-        console.log('then called');
-        appliedSelectors = elements.length;
+      const callback = async (elements, selector, index, matchedSelectors) => {
+        console.log('callback called');
+        appliedSelectors = matchedSelectors.filter((matched) => matched).length;
         const appliedSelectorsStr = appliedSelectors > 99 ? '99+' : '' + appliedSelectors;
-        setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
+        //setBadge(appliedSelectorsStr + '/' + numSelectorsStr);
+        await chrome.runtime.sendMessage({
+          event: "setBadge",
+          data: appliedSelectorsStr + '/' + numSelectorsStr,
+        });
+
         for (const element of elements) {
           if (element.classList.contains('element-zapper')) continue;
           element.classList.add('element-zapper');
-          console.log("Removing " + bigSelector + "...", element);
+          console.log("Removing " + selector + "...", element);
           element.style.setProperty('outline', '1px solid green', 'important');
           element.style.setProperty('background-color', 'lightgreen', 'important');
           setTimeout(() => {
@@ -335,11 +353,13 @@
             // element.remove();
           }, 0);
         }
-        console.log('selectors ' + numSelectors, selectors);
+        // console.log('selectors ' + numSelectors, selectors);
       }
       
-      elementsReady(bigSelector, callback).then(callback); */
+      elementsReady(selectors, callback, {once:true, filterFn: (elem) => !elem.classList.contains('element-zapper')});
+    }
 
+    /*
     if (numSelectors > 0) {
       const callback = async (element, selector) => {
         let joinedSelectors = selectors.join(', ');
@@ -363,7 +383,7 @@
       for (let selector of selectors) {
         elementReady(selector, callback, false);
       }
-    }
+    } */
   });
 
 
