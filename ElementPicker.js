@@ -214,25 +214,35 @@
         set hoverBoxInfoId(value) {
             this.hoverBoxInfo.id = value;
         }
+        get visible() {
+            return this._visible;
+        }
+        set visible(value) {
+            this._visible = value;
+
+            this.hoverBox.style.visibility = this._visible ? "visible" : "hidden";
+            this.hoverBoxInfo.style.visibility = this._visible ? "visible" : "hidden";
+            this.container.style.visibility = this._visible ? "visible" : "hidden";
+            if (this.iframe) {
+              this.iframe.style.visibility = this._visible ? "visible" : "hidden";
+              this.iframe.style.display = this._visible ? "block" : "none";
+            }
+            if (!this._visible) {
+              this.hoverBox.style.width = 0;
+              this.hoverBox.style.height = 0;
+              this.hoverBoxInfo.innerText = '';
+            }
+        }
         get enabled() {
             return this._enabled;
         }
         set enabled(value) {
             this._enabled = value;
+            this.visible = value;
             
-            this.hoverBox.style.visibility = this._enabled ? "visible" : "hidden";
-            this.hoverBoxInfo.style.visibility = this._enabled ? "visible" : "hidden";
-            this.container.style.visibility = this._enabled ? "visible" : "hidden";
-            if (this.iframe) {
-              this.iframe.style.visibility = this._enabled ? "visible" : "hidden";
-              this.iframe.style.display = this._enabled ? "block" : "none";
-            }
             this._triggered = false;
             // console.log("set enabled:", this._enabled);
             if (!this._enabled) {
-              this.hoverBox.style.width = 0;
-              this.hoverBox.style.height = 0;
-              this.hoverBoxInfo.innerText = '';
               if (this._triggerListener) {
                 this.container.removeEventListener(this.action.trigger, this._triggerListener);
               }
