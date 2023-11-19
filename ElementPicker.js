@@ -59,7 +59,7 @@
                 outlineWidth: 1,
                 transition: "all 150ms ease", // set to "" (empty string) to disable
                 ignoreElements: [document.body],
-                ignoreDescendantsSelector: null,
+                ignoreDescendantsOfSelector: null,
                 action: {},
                 hoverBoxInfoId: 'EP_hoverBoxInfo',
             }
@@ -182,14 +182,14 @@
                         // console.log(hoveredElements);
                         let hoveredElement = hoveredElements[0];
                         for (hoveredElement of hoveredElements) {
-                          if (((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement)) && !findAncestor(hoveredElement, '.element-zapper-placeholder')) {
+                          if (((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement)) || (this.ignoreDescendantsOfSelector != null && !findAncestor(hoveredElement, '.element-zapper-placeholder'))) {
                             continue;
                           } else {
                             break;
                           }
                         }
-                        console.log("ignore", !!findAncestor(hoveredElement, '.element-zapper-placeholder'));
-                        if (findAncestor(hoveredElement, '.element-zapper-placeholder')) {
+                        console.log("ignore", this.ignoreDescendantsOfSelector, !!findAncestor(hoveredElement, '.element-zapper-placeholder'));
+                        if (this.ignoreDescendantsOfSelector != null && findAncestor(hoveredElement, '.element-zapper-placeholder')) {
                             return;
                         }
                         // console.log("screenX: " + e.screenX);
@@ -331,11 +331,11 @@
 
             this._redetectMouseMove();
         }
-        get ignoreDescendantsSelector() {
-            return this._ignoreDescendantsSelector;
+        get ignoreDescendantsOfSelector() {
+            return this._ignoreDescendantsOfSelector;
         }
-        set ignoreDescendantsSelector(value) {
-            this._ignoreDescendantsSelector = value;
+        set ignoreDescendantsOfSelector(value) {
+            this._ignoreDescendantsOfSelector = value;
 
             this._redetectMouseMove();
         }
