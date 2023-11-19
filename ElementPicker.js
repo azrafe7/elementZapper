@@ -182,14 +182,15 @@
                         // console.log(hoveredElements);
                         let hoveredElement = hoveredElements[0];
                         for (hoveredElement of hoveredElements) {
-                          if (((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement)) || (this.ignoreDescendantsOfSelector != null && !findAncestor(hoveredElement, '.element-zapper-placeholder'))) {
-                            continue;
-                          } else {
-                            break;
-                          }
+                            if (((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement))) {
+                                continue;
+                            } else {
+                                break;
+                            }
                         }
-                        console.log("ignore", this.ignoreDescendantsOfSelector, !!findAncestor(hoveredElement, '.element-zapper-placeholder'));
-                        if (this.ignoreDescendantsOfSelector != null && findAncestor(hoveredElement, '.element-zapper-placeholder')) {
+                        let isDescendantOfIgnoredAncestor = this.ignoreDescendantsOfSelector != null && findAncestor(hoveredElement, this.ignoreDescendantsOfSelector);
+                        console.log("ignore", this.ignoreDescendantsOfSelector != null, isDescendantOfIgnoredAncestor);
+                        if (isDescendantOfIgnoredAncestor) {
                             return;
                         }
                         // console.log("screenX: " + e.screenX);
