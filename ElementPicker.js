@@ -59,6 +59,7 @@
                 outlineWidth: 1,
                 transition: "all 150ms ease", // set to "" (empty string) to disable
                 ignoreElements: [document.body],
+                ignoreDescendantsSelector: null,
                 action: {},
                 hoverBoxInfoId: 'EP_hoverBoxInfo',
             }
@@ -159,6 +160,13 @@
               // console.log(this.hoverInfo);
             }
             
+            function findAncestor(el, sel) {
+                while (el && !((el.matches || el.matchesSelector).call(el,sel))) {
+                    el = el.parentElement;
+                }
+                return el;
+            }
+            
             this._detectMouseMove = (e) => {
                 this._lastClientX = e.clientX;
                 this._lastClientY = e.clientY;
@@ -166,7 +174,7 @@
                 this._previousEvent = e;
                 let target = e.target;
                 // console.log("TCL: ElementPicker -> this._moveHoverBox -> target", target)
-                if (this.ignoreElements.indexOf(target) === -1 && target.matches(this.selectors)) { // is NOT in ignored elements
+                if (!(this.ignoreElements.indexOf(target) >= 0) && target.matches(this.selectors)) { // is NOT in ignored elements
                     // console.log("TCL: target", target);
                     if (target === this.hoverBox || target === this.container) {
                         // the truely hovered element behind the added hover box
@@ -174,11 +182,15 @@
                         // console.log(hoveredElements);
                         let hoveredElement = hoveredElements[0];
                         for (hoveredElement of hoveredElements) {
-                          if ((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement)) {
+                          if (((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement)) && !findAncestor(hoveredElement, '.element-zapper-placeholder')) {
                             continue;
                           } else {
                             break;
                           }
+                        }
+                        console.log("ignore", !!findAncestor(hoveredElement, '.element-zapper-placeholder'));
+                        if (findAncestor(hoveredElement, '.element-zapper-placeholder')) {
+                            return;
                         }
                         // console.log("screenX: " + e.screenX);
                         // console.log("screenY: " + e.screenY);
@@ -316,6 +328,14 @@
         }
         set ignoreElements(value) {
             this._ignoreElements = value;
+
+            this._redetectMouseMove();
+        }
+        get ignoreDescendantsSelector() {
+            return this._ignoreDescendantsSelector;
+        }
+        set ignoreDescendantsSelector(value) {
+            this._ignoreDescendantsSelector = value;
 
             this._redetectMouseMove();
         }
