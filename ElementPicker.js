@@ -67,7 +67,6 @@
         outlineWidth: 1,
         transition: "all 150ms ease", // set to "" (empty string) to disable
         ignoreElements: [document.body],
-        ignoreDescendantsOfSelector: null,
         action: {},
         hoverBoxInfoId: 'EP_hoverBoxInfo',
       }
@@ -191,11 +190,6 @@
               } else {
                 break;
               }
-            }
-            let isDescendantOfIgnoredAncestor = this.ignoreDescendantsOfSelector != null && findAncestor(hoveredElement, this.ignoreDescendantsOfSelector);
-            console.log("ignore", this.ignoreDescendantsOfSelector != null, isDescendantOfIgnoredAncestor);
-            if (isDescendantOfIgnoredAncestor) {
-              return;
             }
             // console.log("screenX: " + e.screenX);
             // console.log("screenY: " + e.screenY);
@@ -345,15 +339,6 @@
     }
     set ignoreElements(value) {
       this._ignoreElements = value;
-
-      this._redetectMouseMove();
-    }
-    
-    get ignoreDescendantsOfSelector() {
-      return this._ignoreDescendantsOfSelector;
-    }
-    set ignoreDescendantsOfSelector(value) {
-      this._ignoreDescendantsOfSelector = value;
 
       this._redetectMouseMove();
     }
