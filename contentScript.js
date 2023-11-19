@@ -66,8 +66,20 @@
           data: null,
         }); */
         unlockScreenIfLocked(target);
-        const compactSelector = elemToSelector(target, {compact:true, fullPath:true});
+        const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
         if (!alertSelector) {
+          let [placeholder, wrappedElement] = insertPlaceholderForElement(target);
+          placeholder.style.cursor = 'pointer';
+          placeholder.onclick = (e) => { 
+            wrappedElement.style.display = target.style.display = ''; 
+            placeholder.style.display = 'none';
+            target.style.display = '';
+            const parentElement = placeholder.parentElement;
+            parentElement.insertBefore(target, placeholder);
+            placeholder.remove();
+            wrappedElement.remove();
+            e.preventDefault();
+          };
           target.style.setProperty('display', 'none', 'important');
           // target?.remove();
 
@@ -293,6 +305,33 @@
     });
   }
 
+  function getStyleValue(elem, prop) {
+    const style = elem ? window.getComputedStyle(elem) : null;
+    return style ? style[prop] : '';
+  }
+  function insertPlaceholderForElement(element, innerHTML='EZP') {
+    const styleKeys = ['display', 'margin', 'padding'];
+    let style = {};
+    for (const k of styleKeys) style[k] = getStyleValue(element, k);
+    
+    let wrappedElement = document.createElement('div');
+    wrappedElement.classList.add('.element-zapper-wrap-hide');
+    wrappedElement.style.setProperty('display', style['display']);
+    
+    let placeholder = document.createElement('div');
+    placeholder.classList.add('.element-zapper-placeholder');
+    for (const k of styleKeys) placeholder.style.setProperty(k, style[k]);
+    placeholder.innerHTML = innerHTML;
+    
+    const parentElement = element.parentElement;
+    parentElement.insertBefore(wrappedElement, element.nextSibling);
+    parentElement.insertBefore(placeholder, element.nextSibling);
+
+    wrappedElement.appendChild(element);
+    
+    return [placeholder, wrappedElement];
+  }
+
   const currentUrl = window.location.href;
   let appliedSelectors = 0;
   let urlTable = {};
@@ -321,11 +360,14 @@
           if (element.classList.contains('element-zapper')) continue;
           element.classList.add('element-zapper');
           console.log("Removing " + selector + "...", element);
-          element.style.setProperty('outline', '1px solid green', 'important');
+          element.style.setProperty('outline', '2px solid green', 'important');
           element.style.setProperty('outline-offset', '-1px', 'important');
           element.style.setProperty('background-color', 'lightgreen', 'important');
-          element.style.setProperty('display', 'none', 'important');
+          // element.style.setProperty('display', 'none', 'important');
           unlockScreen(element);
+          /*element.scrollIntoViewIfNeeded();
+          elementPicker.highlight(element, true);
+          elementPicker.visible = true;*/
           setTimeout(() => {
             // element.style.setProperty('display', 'none', 'important');
             // unlockScreen(element);
