@@ -73,7 +73,7 @@
               document.documentElement.append(pickerIFrame);
 
               const pickerIFrameCSS = `
-                backgroundColor: transparent;
+                background: transparent !important;
                 left: 0px;
                 top: 0px;
                 position: fixed;
