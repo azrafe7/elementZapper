@@ -53,11 +53,13 @@
     trigger: "mouseup",
 
     callback: ((event, target) => {
-      // debug.log("[ElementZapper:CTX] event:", event);
+      debug.log("[ElementZapper:CTX] event:", event);
       let continuePicking = event.shiftKey;
       let alertSelector = event.ctrlKey;
-      event.triggered = event.triggered ?? event.button == 0; // only proceed if left mouse button was pressed or "triggered" was set
-      if (event.triggered) { 
+      event.triggered = event.triggered ?? event.button == 0; // only proceed if left mouse button was pressed or "event.triggered" was set
+      const mustIgnore = findAncestor(target, '.element-zapper-placeholder');
+      continuePicking = continuePicking || mustIgnore;
+      if (event.triggered) {
         debug.log("[ElementZapper:CTX] target:", target);
         debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
         // window.focus();
@@ -65,47 +67,53 @@
           event: "requestUnlock",
           data: null,
         }); */
-        unlockScreenIfLocked(target);
         const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
-        if (!alertSelector) {
-          let [placeholder, wrappedElement] = insertPlaceholderForElement(target);
-          placeholder.style.cursor = 'pointer';
-          placeholder.onclick = (e) => { 
-            wrappedElement.style.display = target.style.display = ''; 
-            placeholder.style.display = 'none';
-            target.style.display = '';
-            const parentElement = placeholder.parentElement;
-            parentElement.insertBefore(target, placeholder);
-            placeholder.remove();
-            wrappedElement.remove();
-            e.preventDefault();
-          };
-          target.style.setProperty('display', 'none', 'important');
-          // target?.remove();
+        if (!mustIgnore) {
+          if (!alertSelector) {
+            unlockScreenIfLocked(target);
+            let placeholder = insertPlaceholderForElement(target);
+            placeholder.appendChild(target);
+            placeholder.onclick = (e) => { 
+              target.style.display = '';
+              const parentElement = placeholder.parentElement;
+              parentElement.insertBefore(target, placeholder);
+              placeholder.remove();
+              e.preventDefault();
+            };
+            target.style.setProperty('display', 'none', 'important');
+            // target?.remove();
 
-          const currentUrl = window.location.href;
-          let urlTable = {};
-          storage.get({urlTable: {}}, (item) => {
-            urlTable = item.urlTable;
-            let selectors = urlTable[currentUrl] ?? [];
-            if (!(selectors.includes(compactSelector))) {
-              selectors.push(compactSelector);
-            }
-            urlTable[currentUrl] = selectors;
-            storage.set({urlTable:urlTable});
-            console.log(urlTable);
-          });
-        } else {
-          let selectorElement = pickerPanelElement.querySelector("#selector");
-          let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
-          selectorElement.innerHTML = elemToSelector(target);
-          compactSelectorElement.innerHTML = compactSelector;
+            const currentUrl = window.location.href;
+            let urlTable = {};
+            storage.get({urlTable: {}}, (item) => {
+              urlTable = item.urlTable;
+              let selectors = urlTable[currentUrl] ?? [];
+              if (!(selectors.includes(compactSelector))) {
+                selectors.push(compactSelector);
+              }
+              urlTable[currentUrl] = selectors;
+              storage.set({urlTable:urlTable});
+              console.log(urlTable);
+            });
+          } else {
+            let selectorElement = pickerPanelElement.querySelector("#selector");
+            let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
+            selectorElement.innerHTML = elemToSelector(target);
+            compactSelectorElement.innerHTML = compactSelector;
+          }
         }
         debug.log("[ElementZapper:CTX] style:", target?.style);
       }
       
       elementPicker.enabled = continuePicking && event.triggered;
     })
+  }
+
+  function findAncestor(el, sel) {
+    while (el && !((el.matches || el.matchesSelector).call(el, sel))) {
+      el = el.parentElement;
+    }
+    return el;
   }
 
   async function addPickerPanelTo(container) {
@@ -305,31 +313,31 @@
     });
   }
 
-  function getStyleValue(elem, prop) {
-    const style = elem ? window.getComputedStyle(elem) : null;
-    return style ? style[prop] : '';
-  }
-  function insertPlaceholderForElement(element, innerHTML='EZP') {
-    const styleKeys = ['display', 'margin', 'padding'];
+  const zapStyple = `
+    color: ${OUTLINE_COLOR};
+    transform: scaleX(-1) rotate(110deg);
+    transform-origin: 50% 50%;
+    display: inline-block;
+  `
+  function insertPlaceholderForElement(element, innerHTML='zapped<span style="' + zapStyple + '">🗲</span>element', alt="(click to show zapped element)") {
+    const styleKeys = ['display', 'margin', 'padding', 'transform', 'writing-mode'];
     let style = {};
     for (const k of styleKeys) style[k] = getStyleValue(element, k);
     
-    let wrappedElement = document.createElement('div');
-    wrappedElement.classList.add('.element-zapper-wrap-hide');
-    wrappedElement.style.setProperty('display', style['display']);
-    
     let placeholder = document.createElement('div');
-    placeholder.classList.add('.element-zapper-placeholder');
+    placeholder.classList.add('element-zapper-placeholder');
     for (const k of styleKeys) placeholder.style.setProperty(k, style[k]);
+    placeholder.style.setProperty('font-size', '1em');
+    placeholder.style.setProperty('font-family', 'monospace', 'important');
+    for (const k of ['background']) placeholder.style.setProperty(k, elementPicker.hoverBox.style[k], 'important');
+    placeholder.style.setProperty('cursor', 'not-allowed', 'important');
     placeholder.innerHTML = innerHTML;
+    placeholder.setAttribute('title', alt);
     
     const parentElement = element.parentElement;
-    parentElement.insertBefore(wrappedElement, element.nextSibling);
     parentElement.insertBefore(placeholder, element.nextSibling);
-
-    wrappedElement.appendChild(element);
     
-    return [placeholder, wrappedElement];
+    return placeholder;
   }
 
   const currentUrl = window.location.href;
