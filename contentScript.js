@@ -68,7 +68,9 @@
           data: null,
         }); */
         const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
-        if (!mustIgnore) {
+        if (mustIgnore) {
+          debug.log("mustIgnore", target);
+        } else {
           if (!alertSelector) {
             unlockScreenIfLocked(target);
             let placeholder = insertPlaceholderForElement(target);
@@ -102,7 +104,7 @@
             compactSelectorElement.innerHTML = compactSelector;
           }
         }
-        debug.log("[ElementZapper:CTX] style:", target?.style);
+        debug.log("[ElementZapper:CTX] style:", target?.style, "ignored", mustIgnore);
       }
       
       elementPicker.enabled = continuePicking && event.triggered;
