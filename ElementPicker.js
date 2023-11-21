@@ -127,21 +127,14 @@
         this._actionEvent = null;
       }
 
-      this.highlight = (target) => {
+      this.getElementInfo = (target) => {
         const targetOffset = target.getBoundingClientRect();
         const targetHeight = targetOffset.height;
         const targetWidth = targetOffset.width;
 
-        this.hoverBox.style.width = targetWidth + this.borderWidth * 2 + "px";
-        this.hoverBox.style.height = targetHeight + this.borderWidth * 2 + "px";
-
-        this.hoverBox.style.outline = this.outlineWidth + "px solid " + this.outlineColor;
-
         // need scrollX and scrollY to account for scrolling
         const top = (target.tagName === 'HTML' ? 0 : targetOffset.top) + (this.iframe ? 0 : window.scrollY);
         const left = (target.tagName === 'HTML' ? 0 : targetOffset.left) + (this.iframe ? 0 : window.scrollX);
-        this.hoverBox.style.top = top - this.borderWidth + "px";
-        this.hoverBox.style.left = left - this.borderWidth + "px";
 
         // const infoText = `${targetText} ${targetWidth} × ${targetHeight}`;
         const attrs = Array.from(target.attributes, ({
@@ -150,9 +143,8 @@
         }) => (name + '=' + value));
         const ellipsizedAttrsText = attrs.length > 0 ? ' ' + ellipsize(attrs.join(' '), 20) : '';
         const infoText = `<${target.tagName.toUpperCase()}${ellipsizedAttrsText}> ${targetWidth} × ${targetHeight}`;
-        this.hoverBoxInfo.innerText = infoText;
 
-        this.hoverInfo = {
+        let elementInfo = {
           element: target,
           tagName: target.tagName.toUpperCase(),
           width: targetWidth,
@@ -166,6 +158,24 @@
           clientRect: targetOffset,
           text: infoText,
         }
+        
+        return elementInfo;
+      }
+
+      this.highlight = (target) => {
+        this.hoverInfo = this.getElementInfo(target);
+        const info = this.hoverInfo;
+        
+        this.hoverBox.style.width = info.width + this.borderWidth * 2 + "px";
+        this.hoverBox.style.height = info.height + this.borderWidth * 2 + "px";
+
+        this.hoverBox.style.outline = this.outlineWidth + "px solid " + this.outlineColor;
+
+        // need scrollX and scrollY to account for scrolling
+        this.hoverBox.style.top = info.top - this.borderWidth + "px";
+        this.hoverBox.style.left = info.left - this.borderWidth + "px";
+
+        this.hoverBoxInfo.innerText = info.text;
 
         // console.log(this.hoverInfo);
       }
