@@ -315,13 +315,13 @@
     });
   }
 
-  const zapStyple = `
+  const ZAP_STYLE = `
     color: ${OUTLINE_COLOR};
     transform: scaleX(-1) rotate(110deg);
     transform-origin: 50% 50%;
     display: inline-block;
-  `
-  function insertPlaceholderForElement(element, innerHTML='zapped<span style="' + zapStyple + '">🗲</span>element', alt="(click to show zapped element)") {
+  `;
+  function insertPlaceholderForElement(element, innerHTML='zapped<span style="' + ZAP_STYLE + '">🗲</span>element', alt="(click to show zapped element)") {
     const styleKeys = ['display', 'margin', 'padding', 'transform', 'writing-mode'];
     let style = {};
     for (const k of styleKeys) style[k] = getStyleValue(element, k);
