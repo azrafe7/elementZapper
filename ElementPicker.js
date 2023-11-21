@@ -192,9 +192,17 @@
           if (target === this.hoverBox || target === this.container) {
             // the truely hovered element behind the added hover box
             const hoveredElements = document.elementsFromPoint(e.clientX, e.clientY);
+            let startIdx = 0;
+            for (const [index, element] of hoveredElements.entries()) {
+              if (element.matches('svg')) {
+                startIdx = index;
+                break;
+              }
+            }
             // console.log(hoveredElements);
-            let hoveredElement = hoveredElements[0];
-            for (hoveredElement of hoveredElements) {
+            let hoveredElement = hoveredElements[startIdx];
+            for (let i=startIdx; i < hoveredElements.length; i++) {
+              hoveredElement = hoveredElements[i];
               if (((this.iframe && this.iframe.contains(hoveredElement)) || this.container.contains(hoveredElement))) {
                 continue;
               } else {
