@@ -76,7 +76,11 @@
             const isElementSmall = elementPicker.hoverInfo.width <= 32 && elementPicker.hoverInfo.height <= 32;
             const innerHTML = isElementSmall ? ZAPPED_ELEMENT_HTML_MINI : ZAPPED_ELEMENT_HTML;
             let placeholder = insertPlaceholderForElement(target, innerHTML);
-            if (isElementSmall && parseInt(placeholder.style.padding) == 0) placeholder.style.setProperty('padding', '2px 2px');
+            if (isElementSmall) {
+              if (parseInt(placeholder.style.padding) == 0) placeholder.style.setProperty('padding', '2px 2px');
+              placeholder.style.setProperty('width', elementPicker.hoverInfo.width + 'px');
+              placeholder.style.setProperty('text-align', 'center');
+            }
             placeholder.appendChild(target);
             placeholder.onclick = (e) => { 
               target.style.display = '';
@@ -326,6 +330,7 @@
   `;
   const ZAPPED_ELEMENT_HTML = 'zapped<span style="' + ZAP_STYLE + '">🗲</span>element';
   const ZAPPED_ELEMENT_HTML_MINI = '<span style="' + ZAP_STYLE + '">🗲</span>';
+  
   function insertPlaceholderForElement(element, innerHTML=ZAPPED_ELEMENT_HTML, alt="(click to show zapped element)") {
     const styleKeys = ['display', 'margin', 'padding', 'transform', 'writing-mode'];
     let style = {};
@@ -334,6 +339,7 @@
     let placeholder = document.createElement('div');
     placeholder.classList.add('element-zapper-placeholder');
     for (const k of styleKeys) placeholder.style.setProperty(k, style[k]);
+    if (placeholder.style.display === 'inline') placeholder.style.setProperty('display', 'inline-block');
     placeholder.style.setProperty('font-size', '1em');
     placeholder.style.setProperty('font-family', 'monospace', 'important');
     for (const k of ['background']) placeholder.style.setProperty(k, elementPicker.hoverBox.style[k], 'important');
