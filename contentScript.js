@@ -73,7 +73,10 @@
         } else {
           if (!alertSelector) {
             unlockScreenIfLocked(target);
-            let placeholder = insertPlaceholderForElement(target);
+            const isElementSmall = elementPicker.hoverInfo.width <= 32 && elementPicker.hoverInfo.height <= 32;
+            const innerHTML = isElementSmall ? ZAPPED_ELEMENT_HTML_MINI : ZAPPED_ELEMENT_HTML;
+            let placeholder = insertPlaceholderForElement(target, innerHTML);
+            if (isElementSmall && parseInt(placeholder.style.padding) == 0) placeholder.style.setProperty('padding', '2px 2px');
             placeholder.appendChild(target);
             placeholder.onclick = (e) => { 
               target.style.display = '';
@@ -317,11 +320,13 @@
 
   const ZAP_STYLE = `
     color: ${OUTLINE_COLOR};
-    transform: scaleX(-1) rotate(110deg);
-    transform-origin: 50% 50%;
+    /*transform: scaleX(-1) rotate(110deg);*/
+    /*transform-origin: 50% 50%;*/
     display: inline-block;
   `;
-  function insertPlaceholderForElement(element, innerHTML='zapped<span style="' + ZAP_STYLE + '">🗲</span>element', alt="(click to show zapped element)") {
+  const ZAPPED_ELEMENT_HTML = 'zapped<span style="' + ZAP_STYLE + '">🗲</span>element';
+  const ZAPPED_ELEMENT_HTML_MINI = '<span style="' + ZAP_STYLE + '">🗲</span>';
+  function insertPlaceholderForElement(element, innerHTML=ZAPPED_ELEMENT_HTML, alt="(click to show zapped element)") {
     const styleKeys = ['display', 'margin', 'padding', 'transform', 'writing-mode'];
     let style = {};
     for (const k of styleKeys) style[k] = getStyleValue(element, k);
