@@ -340,6 +340,8 @@
     placeholder.classList.add('element-zapper-placeholder');
     for (const k of styleKeys) placeholder.style.setProperty(k, style[k]);
     if (placeholder.style.display === 'inline') placeholder.style.setProperty('display', 'inline-block');
+    placeholder.style.setProperty('text-align', 'center');
+    placeholder.style.setProperty('align-items', 'center');
     placeholder.style.setProperty('font-size', '1em');
     placeholder.style.setProperty('font-family', 'monospace', 'important');
     for (const k of ['background']) placeholder.style.setProperty(k, elementPicker.hoverBox.style[k], 'important');
