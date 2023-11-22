@@ -327,7 +327,7 @@
     /*transform: scaleX(-1) rotate(110deg);*/
     /*transform-origin: 50% 50%;*/
     display: inline-block;
-    -webkit-text-stroke: .5px #f64444;
+    -webkit-text-stroke: .5px #fa463c;
   `;
   const ZAPPED_ELEMENT_HTML = 'zapped<span style="' + ZAP_STYLE + '">🗲</span>element';
   const ZAPPED_ELEMENT_HTML_MINI = '<span style="' + ZAP_STYLE + '">🗲</span>';
