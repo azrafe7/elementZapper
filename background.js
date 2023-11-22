@@ -73,6 +73,12 @@ chrome.action.onClicked.addListener(async (tab) => {
     {
       event: "enablePicker",
       data: null,
+    },
+    (response) => {
+      let lastError = chrome.runtime.lastError;
+      if (lastError) {
+        console.warn('Whoops...', lastError.message);
+      }
     }
   );
 });
