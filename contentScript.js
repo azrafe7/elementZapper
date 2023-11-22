@@ -344,9 +344,12 @@
     placeholder.style.setProperty('font-family', 'monospace', 'important');
     for (const k of ['background']) placeholder.style.setProperty(k, elementPicker.hoverBox.style[k], 'important');
     placeholder.style.setProperty('cursor', 'not-allowed', 'important');
-    const svgEyeCursorURL = chrome.runtime.getURL("/assets/cursors/eye.svg");
-    console.log(svgEyeCursorURL, `url("${svgEyeCursorURL}"), pointer`);
-    placeholder.style.setProperty('cursor', `url("${svgEyeCursorURL}"), pointer`, 'important');
+    
+    // EXPERIMENTAL CURSORS:
+    // const svgEyeCursorURL = chrome.runtime.getURL("/assets/cursors/eye.svg");
+    // console.log(svgEyeCursorURL, `url("${svgEyeCursorURL}"), pointer`);
+    // placeholder.style.setProperty('cursor', `url("${svgEyeCursorURL}"), pointer`, 'important');
+    
     placeholder.innerHTML = innerHTML;
     placeholder.setAttribute('title', alt);
     
