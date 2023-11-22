@@ -18,7 +18,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["pickerPanel.html", "pickerPanel.css"],
+      "resources": ["pickerPanel.html", "pickerPanel.css", "assets/cursors/*.svg"],
       "matches": ["<all_urls>"]
     }
   ],
