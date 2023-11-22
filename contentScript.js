@@ -324,8 +324,6 @@
 
   const ZAP_STYLE = `
     color: ${OUTLINE_COLOR};
-    /*transform: scaleX(-1) rotate(110deg);*/
-    /*transform-origin: 50% 50%;*/
     display: inline-block;
     -webkit-text-stroke: .5px #fa463c;
   `;
