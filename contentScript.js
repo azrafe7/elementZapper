@@ -73,22 +73,7 @@
         } else {
           if (!alertSelector) {
             unlockScreenIfLocked(target);
-            const isElementSmall = elementPicker.hoverInfo.width <= 32 && elementPicker.hoverInfo.height <= 32;
-            const innerHTML = isElementSmall ? ZAPPED_ELEMENT_HTML_MINI : ZAPPED_ELEMENT_HTML;
-            let placeholder = insertPlaceholderForElement(target, innerHTML);
-            if (isElementSmall) {
-              if (parseInt(placeholder.style.padding) == 0) placeholder.style.setProperty('padding', '2px 2px');
-              placeholder.style.setProperty('width', elementPicker.hoverInfo.width + 'px');
-              placeholder.style.setProperty('text-align', 'center');
-            }
-            placeholder.appendChild(target);
-            placeholder.onclick = (e) => { 
-              target.style.display = '';
-              const parentElement = placeholder.parentElement;
-              parentElement.insertBefore(target, placeholder);
-              placeholder.remove();
-              e.preventDefault();
-            };
+            let placeholder = _insertPlaceholderForElement(target);
             target.style.setProperty('display', 'none', 'important');
             // target?.remove();
 
@@ -322,6 +307,29 @@
     });
   }
 
+  // also sets additional styles and adds event listener
+  function _insertPlaceholderForElement(element) {
+    const elementInfo = elementPicker.getElementInfo(element);
+    const isElementSmall = elementInfo.width <= 32 && elementInfo.height <= 32;
+    const innerHTML = isElementSmall ? ZAPPED_ELEMENT_HTML_MINI : ZAPPED_ELEMENT_HTML;
+    let placeholder = insertPlaceholderForElement(element, innerHTML);
+    if (isElementSmall) {
+      if (parseInt(placeholder.style.padding) == 0) placeholder.style.setProperty('padding', '2px 2px');
+      placeholder.style.setProperty('width', elementInfo.width + 'px');
+      placeholder.style.setProperty('text-align', 'center');
+    }
+    placeholder.appendChild(element);
+    placeholder.onclick = (e) => { 
+      element.style.display = '';
+      const parentElement = placeholder.parentElement;
+      parentElement.insertBefore(element, placeholder);
+      placeholder.remove();
+      e.preventDefault();
+    };
+    
+    return placeholder;
+  }
+
   const ZAP_STYLE = `
     color: ${OUTLINE_COLOR};
     display: inline-block;
@@ -389,11 +397,16 @@
           if (element.classList.contains('element-zapper')) continue;
           element.classList.add('element-zapper');
           console.log("Removing " + selector + "...", element);
-          element.style.setProperty('outline', '2px solid green', 'important');
-          element.style.setProperty('outline-offset', '-1px', 'important');
-          element.style.setProperty('background-color', 'lightgreen', 'important');
-          // element.style.setProperty('display', 'none', 'important');
-          unlockScreen(element);
+
+          unlockScreenIfLocked(element);
+          let placeholder = _insertPlaceholderForElement(element);
+          element.style.setProperty('display', 'none', 'important');
+          // element?.remove();
+          
+          // element.style.setProperty('outline', '2px solid green', 'important');
+          // element.style.setProperty('outline-offset', '-1px', 'important');
+          placeholder.style.setProperty('background-color', '#ffaf00', 'important');
+          
           /*element.scrollIntoViewIfNeeded();
           elementPicker.highlight(element, true);
           elementPicker.visible = true;*/
