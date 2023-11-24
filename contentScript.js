@@ -214,19 +214,33 @@
   
   // close picker when pressing ESC
   keyEventContainer.addEventListener('keyup', function(e) {
-    if (e.keyCode == 27 && elementPicker.enabled) {
+    if (e.code === 'Escape' && elementPicker.enabled) {
       elementPicker.enabled = false;
       debug.log("[ElementZapper:CTX] user aborted");
     }
   }, true);
   
   keyEventContainer.addEventListener('keydown', function(e) {
-    if (e.keyCode == 32 && elementPicker.enabled) {
-      let target = elementPicker.hoverInfo.element;
+    let target = null;
+    let newTarget = null;
+    if (e.code === 'Space' && elementPicker.enabled) {
+      target = elementPicker.hoverInfo.element;
       debug.log("[ElementZapper:CTX] space-clicked target:", target);
       e.preventDefault();
       e.triggered = true; // checked inside action callback
       elementPicker.trigger(e);
+    } else if (e.code === 'KeyQ' && elementPicker.enabled) {
+      target = elementPicker.hoverInfo.element;
+      newTarget = target.parentElement;
+      debug.log("[ElementZapper:CTX] Q-clicked target's parent:", newTarget);
+      if (newTarget) elementPicker.highlight(newTarget);
+      e.preventDefault();
+    } else if (e.code === 'KeyA' && elementPicker.enabled) {
+      target = elementPicker.hoverInfo.element;
+      newTarget = target.childElementCount == 1 ? target.children[0] : null;
+      debug.log("[ElementZapper:CTX] A-clicked target's child:", newTarget);
+      if (newTarget) elementPicker.highlight(newTarget);
+      e.preventDefault();
     }
   }, true);
 
@@ -392,7 +406,7 @@
           event: "setBadge",
           data: appliedSelectorsStr + '/' + numSelectorsStr,
         });
-
+        
         for (const element of elements) {
           if (element.classList.contains('element-zapper')) continue;
           element.classList.add('element-zapper');
