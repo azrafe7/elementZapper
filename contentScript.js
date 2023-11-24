@@ -229,17 +229,27 @@
       e.preventDefault();
       e.triggered = true; // checked inside action callback
       elementPicker.trigger(e);
-    } else if (e.code === 'KeyQ' && elementPicker.enabled) {
+    } else if (elementPicker.enabled && (e.code === 'KeyQ' || e.code === 'KeyA')) {
       target = elementPicker.hoverInfo.element;
-      newTarget = target.parentElement;
-      debug.log("[ElementZapper:CTX] Q-clicked target's parent:", newTarget);
-      if (newTarget) elementPicker.highlight(newTarget);
-      e.preventDefault();
-    } else if (e.code === 'KeyA' && elementPicker.enabled) {
-      target = elementPicker.hoverInfo.element;
-      newTarget = target.childElementCount == 1 ? target.children[0] : null;
-      debug.log("[ElementZapper:CTX] A-clicked target's child:", newTarget);
-      if (newTarget) elementPicker.highlight(newTarget);
+      const hoveredElements = document.elementsFromPoint(elementPicker._lastClientX, elementPicker._lastClientY);
+      const hoveredElementsLength = hoveredElements.length;
+      const targetIdx = hoveredElements.indexOf(target);
+      const targetHasNext = targetIdx <= (hoveredElementsLength - 2);
+      const targetHasPrev = targetIdx > 0;
+      if (e.code === 'KeyQ' && targetHasNext) { // drill up
+        newTarget = hoveredElements[targetIdx + 1];
+        if (newTarget.contains(elementPicker.iframe)) {
+          newTarget = target;
+        }
+        debug.log("[ElementZapper:CTX] Q-pressed new ↑ target:", newTarget);
+      } else if (e.code === 'KeyA' && targetHasPrev) { // drill down
+        newTarget = hoveredElements[targetIdx - 1];
+        if (newTarget.contains(elementPicker.iframe)) {
+          newTarget = target;
+        }
+        debug.log("[ElementZapper:CTX] A-pressed new ↓ target:", newTarget);
+      }
+      if (newTarget != target) elementPicker.highlight(newTarget);
       e.preventDefault();
     }
   }, true);
