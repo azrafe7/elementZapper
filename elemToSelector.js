@@ -64,6 +64,21 @@ function jq(myid) {
   return myid.replace(/(:|\.|\[|\]|,|=|@| )/g, "\\$1");
 }
 
+function xpathQuery(expr, context, resultType) {
+  context = context ?? document;
+  resultType = resultType ?? XPathResult.ANY_TYPE;
+  
+  let result = document.evaluate(expr, context, null, resultType, null);
+  let results = [];
+  let curr = result.iterateNext();
+  while (curr) {
+    results.push(curr);
+    curr = result.iterateNext();
+  }
+  
+  return results;
+}
+
 // test all elements on page
 function testElemToSelector() {
   const options = {compact:true};
