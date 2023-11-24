@@ -231,25 +231,39 @@
       elementPicker.trigger(e);
     } else if (elementPicker.enabled && (e.code === 'KeyQ' || e.code === 'KeyA')) {
       target = elementPicker.hoverInfo.element;
-      const hoveredElements = document.elementsFromPoint(elementPicker._lastClientX, elementPicker._lastClientY);
-      const hoveredElementsLength = hoveredElements.length;
-      const targetIdx = hoveredElements.indexOf(target);
-      const targetHasNext = targetIdx <= (hoveredElementsLength - 2);
+
+      let innermostTargetAtPoint = null; // first non-picker-iframe element
+      for (let el of document.elementsFromPoint(elementPicker._lastClientX, elementPicker._lastClientY)) {
+        if (el != elementPicker.iframe) {
+          innermostTargetAtPoint = el;
+          break;
+        }
+      }
+      // build ancestors array
+      let ancestorsAndSelf = [];
+      for (let el=innermostTargetAtPoint; el != null; el = el.parentElement) {
+        ancestorsAndSelf.push(el);
+      }
+      
+      const ancestorsAndSelfLength = ancestorsAndSelf.length;
+      const targetIdx = ancestorsAndSelf.indexOf(target);
+      const targetHasNext = targetIdx <= (ancestorsAndSelfLength - 2);
       const targetHasPrev = targetIdx > 0;
       if (e.code === 'KeyQ' && targetHasNext) { // drill up
-        newTarget = hoveredElements[targetIdx + 1];
+        newTarget = ancestorsAndSelf[targetIdx + 1];
         if (newTarget.contains(elementPicker.iframe)) {
           newTarget = target;
         }
         debug.log("[ElementZapper:CTX] Q-pressed new ↑ target:", newTarget);
       } else if (e.code === 'KeyA' && targetHasPrev) { // drill down
-        newTarget = hoveredElements[targetIdx - 1];
+        newTarget = ancestorsAndSelf[targetIdx - 1];
         if (newTarget.contains(elementPicker.iframe)) {
           newTarget = target;
         }
         debug.log("[ElementZapper:CTX] A-pressed new ↓ target:", newTarget);
       }
-      if (newTarget != target) elementPicker.highlight(newTarget);
+      debug.log(`${targetIdx}/${ancestorsAndSelfLength}`, 'newTarget', targetHasPrev, targetHasNext, newTarget);
+      if (newTarget && newTarget != target) elementPicker.highlight(newTarget);
       e.preventDefault();
     }
   }, true);
