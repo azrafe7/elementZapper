@@ -90,10 +90,7 @@
               console.log(urlTable);
             });
           } else {
-            let selectorElement = pickerPanelElement.querySelector("#selector");
-            let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
-            selectorElement.innerHTML = elemToSelector(target);
-            compactSelectorElement.innerHTML = compactSelector;
+            updatePickerPanel(target, compactSelector);
           }
         }
         debug.log("[ElementZapper:CTX] style:", target?.style, "ignored", mustIgnore);
@@ -108,6 +105,13 @@
       el = el.parentElement;
     }
     return el;
+  }
+
+  function updatePickerPanel(target, compactSelector) {
+    let selectorElement = pickerPanelElement.querySelector("#selector");
+    let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
+    selectorElement.innerHTML = elemToSelector(target, {compact:false, fullPath:true});
+    compactSelectorElement.innerHTML = compactSelector ?? elemToSelector(target, {compact:true, fullPath:false});
   }
 
   async function addPickerPanelTo(container) {
@@ -263,7 +267,11 @@
         debug.log("[ElementZapper:CTX] A-pressed new ↓ target:", newTarget);
       }
       debug.log(`${targetIdx}/${ancestorsAndSelfLength}`, 'newTarget', targetHasPrev, targetHasNext, newTarget);
-      if (newTarget && newTarget != target) elementPicker.highlight(newTarget);
+      if (newTarget && newTarget != target) {
+        elementPicker.highlight(newTarget);
+        let alertSelector = e.ctrlKey;
+        if (alertSelector) updatePickerPanel(newTarget);
+      }
       e.preventDefault();
     }
   }, true);
