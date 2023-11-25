@@ -45,8 +45,8 @@ function elemToSelector(elem, options={}) {
   
   if ((fullPath && parentElement?.childElementCount > 1) || (!hasId && parentElement?.childElementCount > 1 || (hasId && !uniqueIds))) {
     let similarSiblings = Array.from(parentElement.children).filter((e) => { return e.matches(str); });
-    // console.log(str, similarSiblings.length);
-    if (!compact || (compact && (similarSiblings.length > 1 || !uniqueIds))) {
+    console.log(options, str, similarSiblings.length);
+    if ((compact && (similarSiblings.length > 1 || !uniqueIds)) || (fullPath && (similarSiblings.length > 1))) {
       let childIndex = 1;
       for (let e = elem; e.previousElementSibling; e = e.previousElementSibling) {
         childIndex += 1;
