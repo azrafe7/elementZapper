@@ -392,7 +392,7 @@
     let placeholder = document.createElement('div');
     placeholder.classList.add('element-zapper-placeholder');
     for (const k of styleKeys) placeholder.style.setProperty(k, style[k]);
-    if (placeholder.style.display === 'inline') placeholder.style.setProperty('display', 'inline-block');
+    if (placeholder.style.display === 'inline' || placeholder.style.display === 'block') placeholder.style.setProperty('display', 'inline-block');
     placeholder.style.setProperty('text-align', 'center');
     placeholder.style.setProperty('justify-content', 'center');
     placeholder.style.setProperty('align-items', 'center');
