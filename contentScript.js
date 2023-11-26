@@ -49,6 +49,73 @@
   // let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(document.body);
   console.log(pickerPanelContainer);
   
+  let undoZapElementStack = [];
+  let redoZapElementStack = [];
+  
+  let doZap = (element, remember=true) => {
+    const compactSelector = elemToSelector(element, {compact:true, fullPath:false}); // compute selector before adding placeholder
+    debug.log("DO_ZAP", remember, element);
+    unlockScreenIfLocked(element);
+    let placeholder = _insertPlaceholderForElement(element);
+    element.style.setProperty('display', 'none', 'important');
+    // element?.remove();
+
+    if (undoZapElementStack.length == 0 || (undoZapElementStack.length > 0 && undoZapElementStack.at[-1] != element)) {
+      undoZapElementStack.push(element); // store in undo stack
+    }
+    debug.log('UNDO_STACK', undoZapElementStack);
+    debug.log('REDO_STACK', redoZapElementStack);
+    
+    if (remember) {
+      const currentUrl = window.location.href;
+      let urlTable = {};
+      storage.get({urlTable: {}}, (item) => {
+        urlTable = item.urlTable;
+        let selectors = urlTable[currentUrl] ?? [];
+        if (!(selectors.includes(compactSelector))) {
+          selectors.push(compactSelector); // add
+        }
+        urlTable[currentUrl] = selectors;
+        storage.set({urlTable:urlTable});
+        console.log(urlTable);
+      });
+    }
+  }
+  
+  let undoZap = (element, remember=false) => {
+    debug.log('UNDO', remember,  element);
+    element.style.display = '';
+    let maybePlaceholder = element.parentElement;
+    if (maybePlaceholder.matches('.element-zapper-placeholder')) {
+      const placeholderParentElement = maybePlaceholder.parentElement;
+      placeholderParentElement.insertBefore(element, maybePlaceholder);
+      maybePlaceholder.remove();
+    }
+
+    if (redoZapElementStack.length == 0 || (redoZapElementStack.length > 0 && redoZapElementStack.at[-1] != element)) {
+      redoZapElementStack.push(element); // store in redo stack
+    }
+    debug.log('UNDO_STACK', undoZapElementStack);
+    debug.log('REDO_STACK', redoZapElementStack);
+
+    if (remember) {
+      const currentUrl = window.location.href;
+      const compactSelector = elemToSelector(element, {compact:true, fullPath:false});
+      let urlTable = {};
+      storage.get({urlTable: {}}, (item) => {
+        urlTable = item.urlTable;
+        let selectors = urlTable[currentUrl] ?? [];
+        let indexOfSelector = selectors.indexOf(compactSelector);
+        if (indexOfSelector >= 0) {
+          selectors = selectors.toSpliced(indexOfSelector, 1); // remove
+        }
+        urlTable[currentUrl] = selectors;
+        storage.set({urlTable:urlTable});
+        console.log(urlTable);
+      });
+    }
+  }
+  
   elementPicker.action = {
     trigger: "mouseup",
 
@@ -67,29 +134,13 @@
           event: "requestUnlock",
           data: null,
         }); */
-        const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
         if (mustIgnore) {
           debug.log("mustIgnore", target);
         } else {
           if (!alertSelector) {
-            unlockScreenIfLocked(target);
-            let placeholder = _insertPlaceholderForElement(target);
-            target.style.setProperty('display', 'none', 'important');
-            // target?.remove();
-
-            const currentUrl = window.location.href;
-            let urlTable = {};
-            storage.get({urlTable: {}}, (item) => {
-              urlTable = item.urlTable;
-              let selectors = urlTable[currentUrl] ?? [];
-              if (!(selectors.includes(compactSelector))) {
-                selectors.push(compactSelector);
-              }
-              urlTable[currentUrl] = selectors;
-              storage.set({urlTable:urlTable});
-              console.log(urlTable);
-            });
+            doZap(target);
           } else {
+            const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
             updatePickerPanel(target, compactSelector);
           }
         }
@@ -227,6 +278,10 @@
   keyEventContainer.addEventListener('keydown', function(e) {
     let target = null;
     let newTarget = null;
+    const CTRL_Z = e.ctrlKey && e.code === 'KeyZ';
+    const CTRL_Y = e.ctrlKey && e.code === 'KeyY';
+    let undoAction = (/*elementPicker.enabled &&*/ !e.shiftKey && CTRL_Z);
+    let redoAction = (/*elementPicker.enabled &&*/ (e.shiftKey && CTRL_Z) || (CTRL_Y));
     if (e.code === 'Space' && elementPicker.enabled) {
       target = elementPicker.hoverInfo.element;
       debug.log("[ElementZapper:CTX] space-clicked target:", target);
@@ -273,6 +328,24 @@
         if (alertSelector) updatePickerPanel(newTarget);
       }
       e.preventDefault();
+    } else if (undoAction) {
+      if (undoZapElementStack.length == 0) {
+        debug.log("K-UNDO stack empty");
+      } else {
+        const lastZappedElement = undoZapElementStack.pop();
+        // redoZapElementStack.push(lastZappedElement);
+        debug.log("K-UNDO", lastZappedElement);
+        undoZap(lastZappedElement, true);
+      }
+    } else if (redoAction) {
+      if (redoZapElementStack.length == 0) {
+        debug.log("K-REDO stack empty");
+      } else {
+        const lastZappedElement = redoZapElementStack.pop();
+        // undoZapElementStack.push(lastZappedElement);
+        debug.log("K-REDO", lastZappedElement);
+        doZap(lastZappedElement, true);
+      }
     }
   }, true);
 
@@ -366,10 +439,12 @@
     }
     placeholder.appendChild(element);
     placeholder.onclick = (e) => { 
-      element.style.display = '';
-      const parentElement = placeholder.parentElement;
-      parentElement.insertBefore(element, placeholder);
-      placeholder.remove();
+      // needs to be removed from the undo stack first
+      let elementIndex = undoZapElementStack.indexOf(element);
+      if (elementIndex >= 0) {
+        undoZapElementStack = undoZapElementStack.toSpliced(elementIndex, 1);
+      }
+      undoZap(element, false);
       e.preventDefault();
     };
     
