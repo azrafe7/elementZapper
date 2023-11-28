@@ -54,18 +54,12 @@
   
   let doZap = (element, remember=true) => {
     const compactSelector = elemToSelector(element, {compact:true, fullPath:false}); // compute selector before adding placeholder
-    debug.log("DO_ZAP", remember, element);
+    debug.log('do', element, remember);
     unlockScreenIfLocked(element);
     let placeholder = _insertPlaceholderForElement(element);
     element.style.setProperty('display', 'none', 'important');
     // element?.remove();
 
-    if (undoZapElementStack.length == 0 || (undoZapElementStack.length > 0 && undoZapElementStack.at[-1] != element)) {
-      undoZapElementStack.push(element); // store in undo stack
-    }
-    debug.log('UNDO_STACK', undoZapElementStack);
-    debug.log('REDO_STACK', redoZapElementStack);
-    
     if (remember) {
       const currentUrl = window.location.href;
       let urlTable = {};
@@ -73,7 +67,8 @@
         urlTable = item.urlTable;
         let selectors = urlTable[currentUrl] ?? [];
         if (!(selectors.includes(compactSelector))) {
-          selectors.push(compactSelector); // add
+          selectors.push(compactSelector);   // add and...
+          undoZapElementStack.push(element); // store in undo stack
         }
         urlTable[currentUrl] = selectors;
         storage.set({urlTable:urlTable});
@@ -83,7 +78,7 @@
   }
   
   let undoZap = (element, remember=false) => {
-    debug.log('UNDO', remember,  element);
+    debug.log('undo', element, remember);
     element.style.display = '';
     let maybePlaceholder = element.parentElement;
     if (maybePlaceholder.matches('.element-zapper-placeholder')) {
@@ -92,12 +87,6 @@
       maybePlaceholder.remove();
     }
 
-    if (redoZapElementStack.length == 0 || (redoZapElementStack.length > 0 && redoZapElementStack.at[-1] != element)) {
-      redoZapElementStack.push(element); // store in redo stack
-    }
-    debug.log('UNDO_STACK', undoZapElementStack);
-    debug.log('REDO_STACK', redoZapElementStack);
-
     if (remember) {
       const currentUrl = window.location.href;
       const compactSelector = elemToSelector(element, {compact:true, fullPath:false});
@@ -105,9 +94,9 @@
       storage.get({urlTable: {}}, (item) => {
         urlTable = item.urlTable;
         let selectors = urlTable[currentUrl] ?? [];
-        let indexOfSelector = selectors.indexOf(compactSelector);
-        if (indexOfSelector >= 0) {
-          selectors = selectors.toSpliced(indexOfSelector, 1); // remove
+        if ((selectors.includes(compactSelector))) {
+          selectors.remove(compactSelector); // remove and...
+          redoZapElementStack.push(element); // store in redo stack
         }
         urlTable[currentUrl] = selectors;
         storage.set({urlTable:urlTable});
@@ -278,10 +267,6 @@
   keyEventContainer.addEventListener('keydown', function(e) {
     let target = null;
     let newTarget = null;
-    const CTRL_Z = e.ctrlKey && e.code === 'KeyZ';
-    const CTRL_Y = e.ctrlKey && e.code === 'KeyY';
-    let undoAction = (/*elementPicker.enabled &&*/ !e.shiftKey && CTRL_Z);
-    let redoAction = (/*elementPicker.enabled &&*/ (e.shiftKey && CTRL_Z) || (CTRL_Y));
     if (e.code === 'Space' && elementPicker.enabled) {
       target = elementPicker.hoverInfo.element;
       debug.log("[ElementZapper:CTX] space-clicked target:", target);
@@ -328,24 +313,6 @@
         if (alertSelector) updatePickerPanel(newTarget);
       }
       e.preventDefault();
-    } else if (undoAction) {
-      if (undoZapElementStack.length == 0) {
-        debug.log("K-UNDO stack empty");
-      } else {
-        const lastZappedElement = undoZapElementStack.pop();
-        // redoZapElementStack.push(lastZappedElement);
-        debug.log("K-UNDO", lastZappedElement);
-        undoZap(lastZappedElement, true);
-      }
-    } else if (redoAction) {
-      if (redoZapElementStack.length == 0) {
-        debug.log("K-REDO stack empty");
-      } else {
-        const lastZappedElement = redoZapElementStack.pop();
-        // undoZapElementStack.push(lastZappedElement);
-        debug.log("K-REDO", lastZappedElement);
-        doZap(lastZappedElement, true);
-      }
     }
   }, true);
 
@@ -439,12 +406,7 @@
     }
     placeholder.appendChild(element);
     placeholder.onclick = (e) => { 
-      // needs to be removed from the undo stack first
-      let elementIndex = undoZapElementStack.indexOf(element);
-      if (elementIndex >= 0) {
-        undoZapElementStack = undoZapElementStack.toSpliced(elementIndex, 1);
-      }
-      undoZap(element, false);
+      undoZap(element);
       e.preventDefault();
     };
     
