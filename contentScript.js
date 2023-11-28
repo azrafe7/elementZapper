@@ -49,62 +49,6 @@
   // let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(document.body);
   console.log(pickerPanelContainer);
   
-  let undoZapElementStack = [];
-  let redoZapElementStack = [];
-  
-  let doZap = (element, remember=true) => {
-    const compactSelector = elemToSelector(element, {compact:true, fullPath:false}); // compute selector before adding placeholder
-    debug.log('do', element, remember);
-    unlockScreenIfLocked(element);
-    let placeholder = _insertPlaceholderForElement(element);
-    element.style.setProperty('display', 'none', 'important');
-    // element?.remove();
-
-    if (remember) {
-      const currentUrl = window.location.href;
-      let urlTable = {};
-      storage.get({urlTable: {}}, (item) => {
-        urlTable = item.urlTable;
-        let selectors = urlTable[currentUrl] ?? [];
-        if (!(selectors.includes(compactSelector))) {
-          selectors.push(compactSelector);   // add and...
-          undoZapElementStack.push(element); // store in undo stack
-        }
-        urlTable[currentUrl] = selectors;
-        storage.set({urlTable:urlTable});
-        console.log(urlTable);
-      });
-    }
-  }
-  
-  let undoZap = (element, remember=false) => {
-    debug.log('undo', element, remember);
-    element.style.display = '';
-    let maybePlaceholder = element.parentElement;
-    if (maybePlaceholder.matches('.element-zapper-placeholder')) {
-      const placeholderParentElement = maybePlaceholder.parentElement;
-      placeholderParentElement.insertBefore(element, maybePlaceholder);
-      maybePlaceholder.remove();
-    }
-
-    if (remember) {
-      const currentUrl = window.location.href;
-      const compactSelector = elemToSelector(element, {compact:true, fullPath:false});
-      let urlTable = {};
-      storage.get({urlTable: {}}, (item) => {
-        urlTable = item.urlTable;
-        let selectors = urlTable[currentUrl] ?? [];
-        if ((selectors.includes(compactSelector))) {
-          selectors.remove(compactSelector); // remove and...
-          redoZapElementStack.push(element); // store in redo stack
-        }
-        urlTable[currentUrl] = selectors;
-        storage.set({urlTable:urlTable});
-        console.log(urlTable);
-      });
-    }
-  }
-  
   elementPicker.action = {
     trigger: "mouseup",
 
@@ -123,13 +67,29 @@
           event: "requestUnlock",
           data: null,
         }); */
+        const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
         if (mustIgnore) {
           debug.log("mustIgnore", target);
         } else {
           if (!alertSelector) {
-            doZap(target);
+            unlockScreenIfLocked(target);
+            let placeholder = _insertPlaceholderForElement(target);
+            target.style.setProperty('display', 'none', 'important');
+            // target?.remove();
+
+            const currentUrl = window.location.href;
+            let urlTable = {};
+            storage.get({urlTable: {}}, (item) => {
+              urlTable = item.urlTable;
+              let selectors = urlTable[currentUrl] ?? [];
+              if (!(selectors.includes(compactSelector))) {
+                selectors.push(compactSelector);
+              }
+              urlTable[currentUrl] = selectors;
+              storage.set({urlTable:urlTable});
+              console.log(urlTable);
+            });
           } else {
-            const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
             updatePickerPanel(target, compactSelector);
           }
         }
@@ -406,7 +366,10 @@
     }
     placeholder.appendChild(element);
     placeholder.onclick = (e) => { 
-      undoZap(element);
+      element.style.display = '';
+      const parentElement = placeholder.parentElement;
+      parentElement.insertBefore(element, placeholder);
+      placeholder.remove();
       e.preventDefault();
     };
     
