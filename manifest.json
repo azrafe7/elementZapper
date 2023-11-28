@@ -11,7 +11,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["ElementPicker.js", "contentScript.js", "dragmove.js", "elemToSelector.js"],
-      "css": ["ElementPicker.css"],
+      "css": ["ElementPicker.css", "elementZapper.css"],
       "all_frames": false,
       "run_at": "document_idle"
     }
