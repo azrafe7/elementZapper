@@ -79,7 +79,7 @@
             target.style.setProperty('display', 'none', 'important');
             // target?.remove();
 
-            const currentUrl = window.location.href;
+            const currentUrl = getCurrentUrlPattern();
             let urlTable = {};
             storage.get({urlTable: {}}, (item) => {
               urlTable = item.urlTable;
@@ -100,6 +100,11 @@
       
       elementPicker.enabled = continuePicking && event.triggered;
     })
+  }
+
+  function getCurrentUrlPattern() {
+    let url = new URL(window.location.href);
+    return url.protocol + url.origin;
   }
 
   function findAncestor(el, sel) {
@@ -418,7 +423,7 @@
     return placeholder;
   }
 
-  const currentUrl = window.location.href;
+  const currentUrl = getCurrentUrlPattern();
   let appliedSelectors = 0;
   let urlTable = {};
   storage.get({urlTable: {}}, (item) => {
@@ -471,6 +476,10 @@
       
       elementsReady(selectors, callback, {once:true, filterFn: (elem) => !elem.classList.contains('zapped-element')});
     }
+  });
+
+  storage.getBytesInUse(null).then((bytes) => {
+    debug.log(`[ElementZapper:CTX] storage.bytesInUse: ${(bytes/1024).toFixed(2)}/${(storage.QUOTA_BYTES/1024).toFixed(2)} kb`);
   });
 
 })();

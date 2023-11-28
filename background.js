@@ -5,6 +5,12 @@ console.log(manifest.name + " v" + manifest.version);
 
 const storage = chrome.storage.local;
 
+function getCurrentUrlPatternFrom(fullUrl) {
+  let url = new URL(fullUrl);
+  return url.protocol + url.origin;
+}
+
+
 // add contextMenu entry to action button
 function createContextMenu() {
   chrome.contextMenus.removeAll(function() {
@@ -50,9 +56,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } else if (info.menuItemId === "ElementZapper_clearForThisUrl") {
     const items = await storage.get(null);
     let [activeTab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
-    console.log("[ElementZapper:BG] reset for this url...", activeTab.url);
-    if (items?.urlTable && items?.urlTable[activeTab.url]) {
-      delete items.urlTable[activeTab.url];
+    let currentTabUrl = getCurrentUrlPatternFrom(activeTab.url);
+    console.log("[ElementZapper:BG] reset for this url...", currentTabUrl);
+    if (items?.urlTable && items?.urlTable[currentTabUrl]) {
+      delete items.urlTable[currentTabUrl];
     }
     storage.set(items);
     chrome.tabs.sendMessage(
