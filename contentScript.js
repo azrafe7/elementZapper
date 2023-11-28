@@ -73,7 +73,9 @@
         } else {
           if (!alertSelector) {
             unlockScreenIfLocked(target);
-            let placeholder = _insertPlaceholderForElement(target);
+            let [placeholder, movedTarget] = _insertPlaceholderForElement(target);
+            target = movedTarget;
+            target.classList.add('zapped-element');
             target.style.setProperty('display', 'none', 'important');
             // target?.remove();
 
@@ -93,7 +95,7 @@
             updatePickerPanel(target, compactSelector);
           }
         }
-        debug.log("[ElementZapper:CTX] style:", target?.style, "ignored", mustIgnore);
+        debug.log("[ElementZapper:CTX] display:", getStyleValue(target, 'display'), "ignored", mustIgnore);
       }
       
       elementPicker.enabled = continuePicking && event.triggered;
@@ -206,6 +208,7 @@
       const enabled = !elementPicker.enabled;
       elementPicker.enabled = enabled;
       elementPicker.hoverBox.style.cursor = CURSORS[0];
+      sendResponse();
     } else if (event === "unlock") {
       debug.log('unlock');
       unlockScreen();
@@ -364,7 +367,7 @@
       placeholder.style.setProperty('width', elementInfo.width + 'px');
       placeholder.style.setProperty('text-align', 'center');
     }
-    placeholder.appendChild(element);
+    element = placeholder.appendChild(element);
     placeholder.onclick = (e) => { 
       element.style.display = '';
       const parentElement = placeholder.parentElement;
@@ -373,7 +376,7 @@
       e.preventDefault();
     };
     
-    return placeholder;
+    return [placeholder, element];
   }
 
   const ZAP_STYLE = `
@@ -439,13 +442,14 @@
           data: appliedSelectorsStr + '/' + numSelectorsStr,
         });
         
-        for (const element of elements) {
-          if (element.classList.contains('element-zapper')) continue;
-          element.classList.add('element-zapper');
+        for (let element of elements) {
+          if (element.classList.contains('zapped-element')) continue;
+          element.classList.add('zapped-element');
           console.log("Removing " + selector + "...", element);
 
           unlockScreenIfLocked(element);
-          let placeholder = _insertPlaceholderForElement(element);
+          let [placeholder, movedElement] = _insertPlaceholderForElement(element);
+          element = movedElement;
           element.style.setProperty('display', 'none', 'important');
           // element?.remove();
           
@@ -465,7 +469,7 @@
         // console.log('selectors ' + numSelectors, selectors);
       }
       
-      elementsReady(selectors, callback, {once:true, filterFn: (elem) => !elem.classList.contains('element-zapper')});
+      elementsReady(selectors, callback, {once:true, filterFn: (elem) => !elem.classList.contains('zapped-element')});
     }
   });
 
