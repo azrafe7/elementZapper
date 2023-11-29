@@ -4,7 +4,8 @@
 
   const DEBUG = true;
   let debug = {
-    log: DEBUG ? console.log.bind(console) : () => {} // log or NO_OP
+    log: DEBUG ? console.log.bind(console) : () => {}, // log() or NO_OP
+    table: DEBUG ? console.table.bind(console) : () => {} // table() or NO_OP
   }
 
   let manifest = chrome.runtime.getManifest();
@@ -27,6 +28,30 @@
     HIGHLIGHT_BG_COLOR = HIGHLIGHT_DARK;
     OUTLINE_COLOR = OUTLINE_DARK;
   } */
+
+  
+  function logStats() {  
+    let urlTable = {};
+    let stats = {};
+    storage.getBytesInUse(null).then((bytes) => {
+      stats['storageQuota'] = `${(bytes/1024).toFixed(2)}/${(storage.QUOTA_BYTES/1024).toFixed(2)} kb`;
+      storage.get({urlTable: {}}, (item) => {
+        urlTable = item.urlTable;
+        let numUrlPatterns = 0;
+        let numSelectors = 0;
+        for (const [urlPattern, selectors] of Object.entries(urlTable)) {
+          numUrlPatterns++;
+          numSelectors += selectors.length;
+        }
+        stats['urls'] = numUrlPatterns;
+        stats['selectors'] = numSelectors;
+        debug.log(`%c[ElementZapper:CTX] STATS`, 'font-weight:bold; background-color: #ffaf00');
+        debug.table(stats);
+      });
+    });
+  }
+
+  logStats();
 
   let options = {
     container: null,
@@ -476,10 +501,6 @@
       
       elementsReady(selectors, callback, {once:true, filterFn: (elem) => !elem.classList.contains('zapped-element')});
     }
-  });
-
-  storage.getBytesInUse(null).then((bytes) => {
-    debug.log(`[ElementZapper:CTX] storage.bytesInUse: ${(bytes/1024).toFixed(2)}/${(storage.QUOTA_BYTES/1024).toFixed(2)} kb`);
   });
 
 })();
