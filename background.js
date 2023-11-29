@@ -7,7 +7,7 @@ const storage = chrome.storage.local;
 
 function getCurrentUrlPatternFrom(fullUrl) {
   let url = new URL(fullUrl);
-  return url.protocol + url.origin;
+  return url.origin + url.pathname;
 }
 
 

@@ -118,6 +118,11 @@
             });
           } else {
             updatePickerPanel(target, compactSelector);
+            navigator.clipboard.writeText(`document.querySelectorAll('${compactSelector}')`).then(function() {
+              console.log("worked");
+            }, function() {
+              console.log("didn't work");
+            });
           }
         }
         debug.log("[ElementZapper:CTX] display:", getStyleValue(target, 'display'), "ignored", mustIgnore);
@@ -129,7 +134,7 @@
 
   function getCurrentUrlPattern() {
     let url = new URL(window.location.href);
-    return url.protocol + url.origin;
+    return url.origin + url.pathname;
   }
 
   function findAncestor(el, sel) {
@@ -140,8 +145,10 @@
   }
 
   function updatePickerPanel(target, compactSelector) {
+    let titleElement = pickerPanelElement.querySelector("#title");
     let selectorElement = pickerPanelElement.querySelector("#selector");
     let compactSelectorElement = pickerPanelElement.querySelector("#compactSelector");
+    titleElement.innerHTML = getCurrentUrlPattern();
     selectorElement.innerHTML = elemToSelector(target, {compact:false, fullPath:true});
     compactSelectorElement.innerHTML = compactSelector ?? elemToSelector(target, {compact:true, fullPath:false});
   }
