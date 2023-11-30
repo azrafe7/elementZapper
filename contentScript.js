@@ -115,6 +115,7 @@
               urlTable[currentUrl] = selectors;
               storage.set({urlTable:urlTable});
               console.log(urlTable);
+              console.log(`selector: '${compactSelector}'`);
             });
           } else {
             updatePickerPanel(target, compactSelector);
@@ -382,7 +383,9 @@
     });
     mutObserver.observe(document.documentElement, {
       childList: true,
-      subtree: true
+      subtree: true,
+      /*attributes: true,
+      attibuteFilter: ['class']*/
     });
   }
 
@@ -482,7 +485,7 @@
         for (let element of elements) {
           if (element.classList.contains('zapped-element')) continue;
           element.classList.add('zapped-element');
-          console.log("Removing " + selector + "...", element);
+          console.log(`Removing '${selector}' ...`, element);
 
           unlockScreenIfLocked(element);
           let [placeholder, movedElement] = _insertPlaceholderForElement(element);
