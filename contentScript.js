@@ -328,6 +328,7 @@
       }
     }
   }
+  
   keyEventContainer.addEventListener('keyup', (e) => updateCursor({keyUp: true, event: e}), true);
   keyEventContainer.addEventListener('keydown', (e) => updateCursor({keyUp: false, event: e}), true);
 

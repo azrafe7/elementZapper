@@ -15,7 +15,7 @@
   }
 
   class ElementPicker {
-    VERSION = "0.2.4";
+    VERSION = "0.3.0";
 
     constructor(options) {
       // MUST create hover box first before applying options
@@ -118,7 +118,7 @@
       this.trigger = (e) => {
         let target = this.hoverInfo?.element;
         let evt = this._actionEvent ?? e;
-        console.log("TRIGGERED", evt, target, this.action.callback);
+        // console.log("TRIGGERED", evt, target, this.action.callback);
         if (this.action.callback) {
           this.action.callback(evt, target);
           this._redetectMouseMove(); // call it again as the action may have altered the page
