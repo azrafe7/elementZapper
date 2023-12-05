@@ -97,11 +97,11 @@
           debug.log("mustIgnore", target);
         } else {
           if (!alertSelector) {
-            unlockScreenIfLocked(target);
             let [placeholder, movedTarget] = _insertPlaceholderForElement(target);
             target = movedTarget;
             target.classList.add('zapped-element');
             target.style.setProperty('display', 'none', 'important');
+            unlockScreenIfLocked(target);
             // target?.remove();
 
             const currentUrl = getCurrentUrlPattern();
@@ -200,18 +200,28 @@
   function unlockScreen(elem) {
     debug.log('unlock', elem);
     const doc = document;
+    const isScreenLocked = {elem: elem, value: false, reasons: []};
     if (getStyleValue(doc.body, 'overflowY') === 'hidden') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['body', 'overflowY:hidden']);
       doc.body.style.setProperty('overflow', 'auto', 'important');
     }
     if (getStyleValue(doc.body, 'position') === 'fixed') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['body', 'position:fixed']);
       doc.body.style.setProperty('position', 'initial', 'important');
     }
     if (getStyleValue(doc.documentElement, 'position') === 'fixed') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['documentElement', 'position:fixed']);
       doc.documentElement.style.setProperty('position', 'initial', 'important');
     }
     if (getStyleValue(doc.documentElement, 'overflowY') === 'hidden') {
+      isScreenLocked.value = true;
+      isScreenLocked.reasons.push(['documentElement', 'overflowY:hidden']);
       doc.documentElement.style.setProperty('overflow', 'auto', 'important');
     }
+    console.log('isScreenLocked:', isScreenLocked);
   }
   
   // credits to https://github.com/gorhill/uBlock/blob/master/src/js/scriptlets/epicker.js
@@ -488,10 +498,10 @@
           element.classList.add('zapped-element');
           console.log(`Removing '${selector}' ...`, element);
 
-          unlockScreenIfLocked(element);
           let [placeholder, movedElement] = _insertPlaceholderForElement(element);
           element = movedElement;
           element.style.setProperty('display', 'none', 'important');
+          unlockScreenIfLocked(element);
           // element?.remove();
           
           // element.style.setProperty('outline', '2px solid green', 'important');
