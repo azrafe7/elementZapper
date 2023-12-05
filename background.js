@@ -116,3 +116,16 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
     });
   }
 });
+
+chrome.tabs.onActivated.addListener(
+  (activeInfo) => {
+    console.log('send unlock onActivated');
+    chrome.tabs.sendMessage(
+      activeInfo.tabId,
+      {
+        event: "unlock",
+        data: null,
+      }
+    );
+  }
+)
