@@ -74,11 +74,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 // enable picker when clicking the browser action
 chrome.action.onClicked.addListener(async (tab) => {
-  console.log("[ElementZapper:BG] enablePicker");
+  console.log("[ElementZapper:BG] togglePicker");
   chrome.tabs.sendMessage(
     tab.id,
     {
-      event: "enablePicker",
+      event: "togglePicker",
       data: null,
     },
     (response) => {

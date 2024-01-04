@@ -68,69 +68,94 @@
     hoverBoxInfoId: 'zapper_picker_info',
   }
 
-  // create "disabled" elementPicker on page load
-  let elementPicker = new ElementPicker(options);
-  let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(elementPicker.container);
-  // let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(document.body);
-  console.log(pickerPanelContainer);
+  let pickerPanelContainer = null;
+  let pickerPanelElement = null;
+  let elementPicker = null;
+
+  // close picker and set var to null
+  function closePicker() {
+    debug.log("[ElementZapper:CTX] closePicker()");
+    if (elementPicker) {
+      elementPicker.enabled = false;
+      elementPicker.close();
+      pickerPanelContainer = pickerPanelElement = null;
+      elementPicker = null;
+    }
+  }
   
-  elementPicker.action = {
-    trigger: "mouseup",
+  async function createPicker() {
+    debug.log("[ElementZapper:CTX] createPicker()");
 
-    callback: ((event, target) => {
-      debug.log("[ElementZapper:CTX] event:", event);
-      let continuePicking = event.shiftKey;
-      let alertSelector = event.ctrlKey;
-      event.triggered = event.triggered ?? event.button == 0; // only proceed if left mouse button was pressed or "event.triggered" was set
-      const mustIgnore = findAncestor(target, '.element-zapper-placeholder');
-      continuePicking = continuePicking || mustIgnore;
-      if (event.triggered) {
-        debug.log("[ElementZapper:CTX] target:", target);
-        debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
-        // window.focus();
-        /* chrome.runtime.sendMessage({
-          event: "requestUnlock",
-          data: null,
-        }); */
-        const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
-        if (mustIgnore) {
-          debug.log("mustIgnore", target);
-        } else {
-          if (!alertSelector) {
-            let [placeholder, movedTarget] = _insertPlaceholderForElement(target);
-            target = movedTarget;
-            target.classList.add('zapped-element');
-            target.style.setProperty('display', 'none', 'important');
-            unlockScreenIfLocked(target);
-            // target?.remove();
+    if (elementPicker) return;
+    
+    elementPicker = new ElementPicker(options);
 
-            const currentUrl = getCurrentUrlPattern();
-            let urlTable = {};
-            storage.get({urlTable: {}}, (item) => {
-              urlTable = item.urlTable;
-              let selectors = urlTable[currentUrl] ?? [];
-              if (!(selectors.includes(compactSelector))) {
-                selectors.push(compactSelector);
-              }
-              urlTable[currentUrl] = selectors;
-              storage.set({urlTable:urlTable});
-              console.log(urlTable);
-              console.log(`selector: '${compactSelector}'`);
-            });
+    let pickerPanelElements = await addPickerPanelTo(elementPicker.container);
+    pickerPanelContainer = pickerPanelElements[0];
+    pickerPanelElement = pickerPanelElements[1];
+    // let [pickerPanelContainer, pickerPanelElement] = await addPickerPanelTo(document.body);
+    console.log(pickerPanelContainer);
+
+    elementPicker.action = {
+      trigger: "mouseup",
+
+      callback: ((event, target) => {
+        debug.log("[ElementZapper:CTX] event:", event);
+        let continuePicking = event.shiftKey;
+        let alertSelector = event.ctrlKey;
+        event.triggered = event.triggered ?? event.button == 0; // only proceed if left mouse button was pressed or "event.triggered" was set
+        const mustIgnore = findAncestor(target, '.element-zapper-placeholder');
+        continuePicking = continuePicking || mustIgnore;
+        if (event.triggered) {
+          debug.log("[ElementZapper:CTX] target:", target);
+          debug.log("[ElementZapper:CTX] info:", elementPicker.hoverInfo);
+          // window.focus();
+          /* chrome.runtime.sendMessage({
+            event: "requestUnlock",
+            data: null,
+          }); */
+          const compactSelector = elemToSelector(target, {compact:true, fullPath:false});
+          if (mustIgnore) {
+            debug.log("mustIgnore", target);
           } else {
-            updatePickerPanel(target, compactSelector);
-            navigator.clipboard.writeText(`document.querySelectorAll('${compactSelector}')`).then(function() {
-              console.log("worked");
-            }, function() {
-              console.log("didn't work");
-            });
+            if (!alertSelector) {
+              let [placeholder, movedTarget] = _insertPlaceholderForElement(target);
+              target = movedTarget;
+              target.classList.add('zapped-element');
+              target.style.setProperty('display', 'none', 'important');
+              unlockScreenIfLocked(target);
+              // target?.remove();
+
+              const currentUrl = getCurrentUrlPattern();
+              let urlTable = {};
+              storage.get({urlTable: {}}, (item) => {
+                urlTable = item.urlTable;
+                let selectors = urlTable[currentUrl] ?? [];
+                if (!(selectors.includes(compactSelector))) {
+                  selectors.push(compactSelector);
+                }
+                urlTable[currentUrl] = selectors;
+                storage.set({urlTable:urlTable});
+                console.log(urlTable);
+                console.log(`selector: '${compactSelector}'`);
+              });
+            } else {
+              updatePickerPanel(target, compactSelector);
+              navigator.clipboard.writeText(`document.querySelectorAll('${compactSelector}')`).then(function() {
+                console.log("worked");
+              }, function() {
+                console.log("didn't work");
+              });
+            }
           }
+          debug.log("[ElementZapper:CTX] display:", getStyleValue(target, 'display'), "ignored", mustIgnore);
         }
-        debug.log("[ElementZapper:CTX] display:", getStyleValue(target, 'display'), "ignored", mustIgnore);
-      }
-      
-      elementPicker.enabled = continuePicking && event.triggered;
-    })
+        
+        elementPicker.enabled = continuePicking && event.triggered;
+        
+        if (!elementPicker.enabled) closePicker();
+      })
+    }
   }
 
   function getCurrentUrlPattern() {
@@ -252,11 +277,18 @@
     debug.log("[ElementZapper:CTX]", msg);
     const { event, data } = msg;
 
-    if (event === "enablePicker") {
-      const enabled = !elementPicker.enabled;
-      elementPicker.enabled = enabled;
-      elementPicker.hoverBox.style.cursor = CURSORS[0];
-      sendResponse();
+    if (event === "togglePicker") {
+      let isEnabled = elementPicker?.enabled ?? false;
+      let mustEnable = data?.enable ?? !isEnabled;
+      if (isEnabled != mustEnable) {
+        if (mustEnable) {
+          createPicker();
+          elementPicker.enabled = true;
+          elementPicker.hoverBox.style.cursor = CURSORS[0];
+        } else {
+          closePicker();
+        }
+      }      
     } else if (event === "unlock") {
       debug.log('unlock');
       unlockScreen();
@@ -269,8 +301,8 @@
   
   // close picker when pressing ESC
   keyEventContainer.addEventListener('keyup', function(e) {
-    if (e.code === 'Escape' && elementPicker.enabled) {
-      elementPicker.enabled = false;
+    if (e.code === 'Escape' && elementPicker?.enabled) {
+      closePicker();
       debug.log("[ElementZapper:CTX] user aborted");
     }
   }, true);
@@ -278,13 +310,13 @@
   keyEventContainer.addEventListener('keydown', function(e) {
     let target = null;
     let newTarget = null;
-    if (e.code === 'Space' && elementPicker.enabled) {
+    if (e.code === 'Space' && elementPicker?.enabled) {
       target = elementPicker.hoverInfo.element;
       debug.log("[ElementZapper:CTX] space-clicked target:", target);
       e.preventDefault();
       e.triggered = true; // checked inside action callback
       elementPicker.trigger(e);
-    } else if (elementPicker.enabled && (e.code === 'KeyQ' || e.code === 'KeyA')) {
+    } else if (elementPicker?.enabled && (e.code === 'KeyQ' || e.code === 'KeyA')) {
       target = elementPicker.hoverInfo.element;
 
       let innermostTargetAtPoint = null; // first non-picker-iframe element
@@ -330,7 +362,7 @@
   // change picker cursor when holding SHIFT
   function updateCursor(eventInfo) {
     let {keyUp, event} = eventInfo;
-    if (elementPicker.enabled) {
+    if (elementPicker?.enabled) {
       let cursorIdx = +event.shiftKey;
       if (elementPicker.hoverBox.style.cursor != CURSORS[cursorIdx]) {
         debug.log('[ElementZapper:CTX] change cursor to ' + CURSORS[cursorIdx]);
@@ -407,9 +439,22 @@
     });
   }
 
+  function getElementSize(target) {
+    const rect = target.getBoundingClientRect();
+    const targetHeight = rect.height;
+    const targetWidth = rect.width;
+
+    let elementInfo = {
+      width: targetWidth,
+      height: targetHeight,
+    }
+    
+    return elementInfo;
+  }
+
   // also sets additional styles and adds event listener
   function _insertPlaceholderForElement(element) {
-    const elementInfo = elementPicker.getElementInfo(element);
+    const elementInfo = getElementSize(element);
     const isElementSmall = elementInfo.width <= 32 && elementInfo.height <= 32;
     const innerHTML = isElementSmall ? ZAPPED_ELEMENT_HTML_MINI : ZAPPED_ELEMENT_HTML;
     let placeholder = insertPlaceholderForElement(element, innerHTML);
@@ -452,7 +497,7 @@
     placeholder.style.setProperty('align-items', 'center');
     placeholder.style.setProperty('font-size', '1em');
     placeholder.style.setProperty('font-family', 'monospace', 'important');
-    for (const k of ['background']) placeholder.style.setProperty(k, elementPicker.hoverBox.style[k], 'important');
+    for (const k of ['background']) placeholder.style.setProperty(k, options.background, 'important');
     placeholder.style.setProperty('cursor', 'not-allowed', 'important');
     
     // EXPERIMENTAL CURSORS:
