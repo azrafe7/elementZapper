@@ -1,7 +1,7 @@
 # Element Zapper
 Zap/remove any element.
 
-[![ElementZapper](./webstore_assets/screenshot_02_play.png)](https://www.youtube.com/watch?v=OgF6hQbiPmk)
+[![ElementZapper](./webstore_assets/screenshot_02_play.png)](https://invidious.lunar.icu/watch?v=OgF6hQbiPmk)
 
 You can find it here: https://chrome.google.com/webstore/detail/elementzapper/noopjpinkmgojgljobbpbiehkhmaopio
 
