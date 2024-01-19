@@ -11,6 +11,19 @@ function getCurrentUrlPatternFrom(fullUrl) {
 }
 
 
+async function sendMessageToTab(tabId, msg) {
+  return chrome.tabs.sendMessage(
+    tabId,
+    msg,
+    (response) => {
+      let lastError = chrome.runtime.lastError;
+      if (lastError) {
+        console.warn('Whoops...', lastError.message);
+      }
+    }
+  );
+}
+
 // add contextMenu entry to action button
 function createContextMenu() {
   chrome.contextMenus.removeAll(function() {
@@ -46,7 +59,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const items = await storage.get(null);
     console.log("[ElementZapper:BG] log storage...", items);
     let [activeTab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
-    chrome.tabs.sendMessage(
+    sendMessageToTab(
       tab.id,
       {
         event: "log",
@@ -62,7 +75,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       delete items.urlTable[currentTabUrl];
     }
     storage.set(items);
-    chrome.tabs.sendMessage(
+    sendMessageToTab(
       tab.id,
       {
         event: "log",
@@ -75,17 +88,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 // enable picker when clicking the browser action
 chrome.action.onClicked.addListener(async (tab) => {
   console.log("[ElementZapper:BG] togglePicker");
-  chrome.tabs.sendMessage(
+  sendMessageToTab(
     tab.id,
     {
       event: "togglePicker",
       data: null,
-    },
-    (response) => {
-      let lastError = chrome.runtime.lastError;
-      if (lastError) {
-        console.warn('Whoops...', lastError.message);
-      }
     }
   );
 });
@@ -101,7 +108,7 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   console.log(sender.tab.id);
   if (event === 'requestUnlock') {
     console.log('send unlock');
-    chrome.tabs.sendMessage(
+    sendMessageToTab(
       sender.tab.id,
       {
         event: "unlock",
@@ -119,8 +126,8 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
 
 chrome.tabs.onActivated.addListener(
   (activeInfo) => {
-    console.log('send unlock onActivated');
-    chrome.tabs.sendMessage(
+    console.log('send unlock onActivated', activeInfo);
+    sendMessageToTab(
       activeInfo.tabId,
       {
         event: "unlock",
