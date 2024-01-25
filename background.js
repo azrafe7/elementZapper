@@ -126,13 +126,13 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
 
 chrome.tabs.onActivated.addListener(
   (activeInfo) => {
-    console.log('send unlock onActivated', activeInfo);
+    /*console.log('send unlock onActivated', activeInfo);
     sendMessageToTab(
       activeInfo.tabId,
       {
         event: "unlock",
         data: null,
       }
-    );
+    );*/
   }
 )
