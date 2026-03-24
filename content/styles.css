@@ -1,10 +1,15 @@
 .ez-highlight {
   outline: 2px solid red !important;
   cursor: crosshair !important;
-  animation: ez-pulse 0.4s ease-out;
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.8);
+  animation: ez-pulse 0.25s ease-out;
 }
 
 @keyframes ez-pulse {
-  0% { outline-width: 4px; }
-  100% { outline-width: 2px; }
+  from {
+    box-shadow: 0 0 0 8px rgba(255, 0, 0, 0.2);
+  }
+  to {
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.8);
+  }
 }

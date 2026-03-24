@@ -4,6 +4,7 @@
   let lastRemoved = null;
   let stopButton = null;
   let banner = null;
+  let overlayBox = null;
 
   // -----------------------------
   // HELPERS
@@ -11,6 +12,43 @@
 
   function isZapperUI(el) {
     return el && el.closest('[data-ez-ui="1"]');
+  }
+
+  function ensureOverlayBox() {
+    if (overlayBox) return;
+
+    overlayBox = document.createElement("div");
+    overlayBox.setAttribute("data-ez-ui", "1");
+
+    Object.assign(overlayBox.style, {
+      position: "fixed",
+      zIndex: "999999998",
+      border: "2px solid #4FC3F7",
+      background: "rgba(79, 195, 247, 0.15)",
+      pointerEvents: "none",
+      boxSizing: "border-box"
+    });
+
+    document.body.appendChild(overlayBox);
+  }
+
+  function updateOverlayBoxForElement(el) {
+    if (!overlayBox) return;
+    if (!el || !el.getBoundingClientRect) return;
+
+    const rect = el.getBoundingClientRect();
+
+    overlayBox.style.left = rect.left + "px";
+    overlayBox.style.top = rect.top + "px";
+    overlayBox.style.width = rect.width + "px";
+    overlayBox.style.height = rect.height + "px";
+  }
+
+  function removeOverlayBox() {
+    if (overlayBox) {
+      overlayBox.remove();
+      overlayBox = null;
+    }
   }
 
   // -----------------------------
@@ -113,7 +151,12 @@
           lastRemoved.parent.appendChild(lastRemoved.node);
         }
         EZLog.cs("Undo performed");
+
+        // decrement badge count
+        const msg = EZMessaging.makeMessage("ZAP_INCREMENT", { delta: -1 }, "content");
+        EZSend.sendToBackground(msg);
       }
+
       lastRemoved = null;
       toast.remove();
     });
@@ -130,11 +173,21 @@
   function highlight(el) {
     if (isZapperUI(el)) return;
 
+    // If already highlighted, do nothing
+    if (lastHighlighted === el) {
+      return;
+    }
+
+    // Remove highlight from previous
     if (lastHighlighted) {
       lastHighlighted.classList.remove("ez-highlight");
     }
+
     lastHighlighted = el;
     el.classList.add("ez-highlight");
+
+    ensureOverlayBox();
+    updateOverlayBoxForElement(el);
   }
 
   function onMouseMove(e) {
@@ -164,6 +217,10 @@
     try {
       e.target.remove();
       createUndoToast();
+
+      // notify background to increment badge count
+      const msg = EZMessaging.makeMessage("ZAP_INCREMENT", { delta: 1 }, "content");
+      EZSend.sendToBackground(msg);
     } catch (err) {
       EZLog.error("Failed to remove element:", err);
     }
@@ -206,6 +263,7 @@
 
       createStopButton();
       createBanner();
+      ensureOverlayBox();
 
       EZLog.cs("Zapper started");
     },
@@ -230,6 +288,7 @@
 
       removeStopButton();
       removeBanner();
+      removeOverlayBox();
 
       EZLog.cs("Zapper stopped");
     }

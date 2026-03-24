@@ -2,6 +2,10 @@ importScripts("../shared/log.js");
 importScripts("../shared/messaging.js");
 importScripts("../shared/send.js");
 
+let zapCount = 0;
+
+chrome.action.setBadgeBackgroundColor({ color: "#ff4d4d" });
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   EZLog.bg("Received message:", msg);
   handleMessage(msg, sender).then(res => {
@@ -16,6 +20,11 @@ async function handleMessage(msg, sender) {
     case "ZAP_START":
     case "ZAP_STOP":
       return forwardToActiveTab(msg);
+
+    case "ZAP_INCREMENT":
+      zapCount += msg.payload?.delta || 1;
+      chrome.action.setBadgeText({ text: String(zapCount) });
+      return EZMessaging.makeResponse(true, { count: zapCount }, msg.requestId);
 
     case "PING":
       return EZMessaging.makeResponse(true, { pong: true }, msg.requestId);
