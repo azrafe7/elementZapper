@@ -1,4 +1,10 @@
 .ez-highlight {
   outline: 2px solid red !important;
   cursor: crosshair !important;
+  animation: ez-pulse 0.4s ease-out;
+}
+
+@keyframes ez-pulse {
+  0% { outline-width: 4px; }
+  100% { outline-width: 2px; }
 }
