@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { font-family: sans-serif; padding: 10px; }
+      button { width: 100%; padding: 8px; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <button id="start">Start Zapper</button>
+    <button id="stop">Stop Zapper</button>
+
+    <!-- Load shared utilities FIRST -->
+    <script src="../shared/messaging.js"></script>
+    <script src="../shared/send.js"></script>
+
+    <!-- Then load popup logic -->
+    <script src="popup.js"></script>
+  </body>
+</html>
