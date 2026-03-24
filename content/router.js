@@ -1,5 +1,9 @@
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  handleContentMessage(msg).then(sendResponse);
+  EZLog.cs("Received message:", msg);
+  handleContentMessage(msg).then(res => {
+    EZLog.cs("Sending response:", res);
+    sendResponse(res);
+  });
   return true;
 });
 

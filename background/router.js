@@ -1,8 +1,13 @@
+importScripts("../shared/log.js");
 importScripts("../shared/messaging.js");
 importScripts("../shared/send.js");
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  handleMessage(msg, sender).then(sendResponse);
+  EZLog.bg("Received message:", msg);
+  handleMessage(msg, sender).then(res => {
+    EZLog.bg("Sending response:", res);
+    sendResponse(res);
+  });
   return true;
 });
 
