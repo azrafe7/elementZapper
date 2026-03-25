@@ -20,7 +20,10 @@
       { applied: appliedCount, total: totalRulesForSite },
       "content"
     );
-    EZSend.sendToBackground(msg);
+    EZSend.sendToBackground(msg).then((res) => {
+    }).catch(err => {
+      EZLog.error("Failed to update badge");
+    });
   }
 
   // -----------------------------
@@ -294,17 +297,31 @@
 
         item.addEventListener("mouseenter", () => {
           item.style.outline = "1px solid #4FC3F7";
-          highlightMatches(selector);
-          // Read the action from the data attribute set at render time,
-          // not from the closed-over `rule` variable which is out of scope here.
-          const itemAction = item.getAttribute("data-action");
-          if (itemAction === "hide") {
-            showGhostForSelector(selector);
-          }
+
+          try {
+            const target = document.querySelector(selector);
+            if (!target) return;
+
+            // Temporarily reveal hidden elements just long enough to read their rect.
+            const wasHidden = target.style.getPropertyValue("display") === "none";
+            if (wasHidden) target.style.removeProperty("display");
+
+            const rect = target.getBoundingClientRect();
+
+            if (wasHidden) target.style.setProperty("display", "none", "important");
+
+            // Only show the overlay if the element has actual dimensions.
+            if (rect.width > 0 || rect.height > 0) {
+              ensureOverlayBox();
+              overlayBox.style.left   = rect.left   + "px";
+              overlayBox.style.top    = rect.top    + "px";
+              overlayBox.style.width  = rect.width  + "px";
+              overlayBox.style.height = rect.height + "px";
+            }
+          } catch {}
         });
         item.addEventListener("mouseleave", () => {
           item.style.outline = "";
-          unhighlightMatches(selector);
           hideGhost();
         });
 
@@ -775,6 +792,8 @@
       totalRulesForSite = res?.payload?.total ?? totalRulesForSite;
       updateBadge();
       refreshRulesViewer();
+    }).catch(err => {
+      EZLog.error("Failed to save rule:", err.message);
     });
   }
 
