@@ -1,16 +1,3 @@
-chrome.storage.local.get(["zapRules"], (res) => {
-  const rules = res.zapRules || [];
-  EZLog.cs("Applying persistent rules:", rules);
-
-  rules.forEach((selector) => {
-    try {
-      document.querySelectorAll(selector).forEach((el) => el.remove());
-    } catch (err) {
-      EZLog.error("Failed applying rule:", selector, err);
-    }
-  });
-});
-
 (function () {
   let active = false;
   let lastHighlighted = null;
@@ -18,10 +5,51 @@ chrome.storage.local.get(["zapRules"], (res) => {
   let stopButton = null;
   let banner = null;
   let overlayBox = null;
-
+  let appliedCount = 0;
+  let totalRulesForSite = 0;
+  
   // -----------------------------
   // HELPERS
   // -----------------------------
+
+  function updateBadge() {
+    const msg = EZMessaging.makeMessage(
+      "ZAP_SET_BADGE",
+      { applied: appliedCount, total: totalRulesForSite },
+      "content"
+    );
+    EZSend.sendToBackground(msg);
+  }
+
+  chrome.storage.local.get(["zapRulesByHost"], (res) => {
+    const all = res.zapRulesByHost || {};
+    let host = "";
+
+    try {
+      host = new URL(window.location.href).host;
+    } catch {}
+
+    const rules = all[host] || [];
+    totalRulesForSite = rules.length;
+
+    EZLog.cs("Applying persistent rules for host:", host, rules);
+
+    rules.forEach((selector) => {
+      if (!selector || selector.includes("ez-highlight")) return;
+
+      try {
+        const nodes = document.querySelectorAll(selector);
+        if (nodes.length > 0) {
+          appliedCount += nodes.length;
+          nodes.forEach((el) => el.remove());
+        }
+      } catch (err) {
+        EZLog.error("Failed applying rule:", selector, err);
+      }
+    });
+
+    updateBadge();
+  });
 
   function isZapperUI(el) {
     return el && el.closest('[data-ez-ui="1"]');
@@ -168,6 +196,9 @@ chrome.storage.local.get(["zapRules"], (res) => {
         // decrement badge count
         const msg = EZMessaging.makeMessage("ZAP_INCREMENT", { delta: -1 }, "content");
         EZSend.sendToBackground(msg);
+
+        appliedCount = Math.max(0, appliedCount - 1);
+        updateBadge();
       }
 
       lastRemoved = null;
@@ -258,6 +289,10 @@ chrome.storage.local.get(["zapRules"], (res) => {
       );
       EZSend.sendToBackground(msgRule);
 
+      appliedCount += 1;
+      totalRulesForSite += 1;
+      updateBadge();
+
     } catch (err) {
       EZLog.error("Failed to remove element:", err);
     }
@@ -283,26 +318,37 @@ chrome.storage.local.get(["zapRules"], (res) => {
   function generateSelector(el) {
     if (!el) return null;
 
-    // Prefer ID
-    if (el.id) {
-      return `#${el.id}`;
-    }
+    const parts = [];
 
-    // Use classes if available
-    if (el.classList.length > 0) {
-      return (
-        el.tagName.toLowerCase() +
-        "." +
-        Array.from(el.classList).join(".")
+    while (el && el.nodeType === Node.ELEMENT_NODE && el !== document.body) {
+      let part = el.tagName.toLowerCase();
+
+      // ignore our own classes
+      const classes = Array.from(el.classList || []).filter(
+        c => c !== "ez-highlight"
       );
+
+      if (el.id) {
+        part = `#${el.id}`;
+        parts.unshift(part);
+        break; // ID is unique enough
+      } else if (classes.length > 0) {
+        part += "." + classes.join(".");
+      } else {
+        const parent = el.parentElement;
+        if (!parent) {
+          parts.unshift(part);
+          break;
+        }
+        const index = Array.from(parent.children).indexOf(el) + 1;
+        part += `:nth-child(${index})`;
+      }
+
+      parts.unshift(part);
+      el = el.parentElement;
     }
 
-    // Fallback: nth-child
-    const parent = el.parentElement;
-    if (!parent) return el.tagName.toLowerCase();
-
-    const index = Array.from(parent.children).indexOf(el) + 1;
-    return `${el.tagName.toLowerCase()}:nth-child(${index})`;
+    return parts.join(" > ");
   }
 
   // -----------------------------

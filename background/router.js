@@ -5,14 +5,15 @@ importScripts("../shared/send.js");
 let zapCount = 0;
 
 // Load rules on startup
-let rules = [];
-chrome.storage.local.get(["zapRules"], (res) => {
-  rules = res.zapRules || [];
-  EZLog.bg("Loaded rules:", rules);
+let rulesByHost = {};
+
+chrome.storage.local.get(["zapRulesByHost"], (res) => {
+  rulesByHost = res.zapRulesByHost || {};
+  EZLog.bg("Loaded rulesByHost:", rulesByHost);
 });
 
 function saveRules() {
-  chrome.storage.local.set({ zapRules: rules });
+  chrome.storage.local.set({ zapRulesByHost: rulesByHost });
 }
 
 chrome.action.setBadgeBackgroundColor({ color: "#ff4d4d" });
@@ -37,14 +38,38 @@ async function handleMessage(msg, sender) {
       chrome.action.setBadgeText({ text: String(zapCount) });
       return EZMessaging.makeResponse(true, { count: zapCount }, msg.requestId);
 
-    case "ZAP_ADD_RULE":
+    case "ZAP_ADD_RULE": {
       const selector = msg.payload?.selector;
-      if (selector && !rules.includes(selector)) {
-        rules.push(selector);
-        saveRules();
-        EZLog.bg("Rule added:", selector);
+      const url = sender?.tab?.url || "";
+      let host = "";
+
+      try {
+        host = new URL(url).host;
+      } catch {}
+
+      if (!selector || !host) {
+        return EZMessaging.makeResponse(false, {}, msg.requestId, "Missing selector or host");
       }
-      return EZMessaging.makeResponse(true, { rules }, msg.requestId);
+
+      if (!rulesByHost[host]) rulesByHost[host] = [];
+      if (!rulesByHost[host].includes(selector)) {
+        rulesByHost[host].push(selector);
+        saveRules();
+        EZLog.bg("Rule added:", host, selector);
+      }
+
+      const total = rulesByHost[host].length;
+      return EZMessaging.makeResponse(true, { host, total }, msg.requestId);
+    }
+
+    case "ZAP_SET_BADGE": {
+      const applied = msg.payload?.applied ?? 0;
+      const total = msg.payload?.total ?? 0;
+      const text = total > 0 ? `${applied}/${total}` : "";
+      chrome.action.setBadgeBackgroundColor({ color: "#ff4d4d" });
+      chrome.action.setBadgeText({ text });
+      return EZMessaging.makeResponse(true, { applied, total }, msg.requestId);
+    }
 
     case "PING":
       return EZMessaging.makeResponse(true, { pong: true }, msg.requestId);
