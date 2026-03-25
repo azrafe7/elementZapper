@@ -2,17 +2,15 @@ importScripts("../shared/log.js");
 importScripts("../shared/messaging.js");
 importScripts("../shared/send.js");
 
-let zapCount = 0;
+function loadRules() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(["zapRulesByHost"], res => {
+      resolve(res.zapRulesByHost || {});
+    });
+  });
+}
 
-// Load rules on startup
-let rulesByHost = {};
-
-chrome.storage.local.get(["zapRulesByHost"], (res) => {
-  rulesByHost = res.zapRulesByHost || {};
-  EZLog.bg("Loaded rulesByHost:", rulesByHost);
-});
-
-function saveRules() {
+function saveRules(rulesByHost) {
   chrome.storage.local.set({ zapRulesByHost: rulesByHost });
 }
 
@@ -39,11 +37,6 @@ async function handleMessage(msg, sender) {
     case "ZAP_STOP":
       return forwardToActiveTab(msg);
 
-    case "ZAP_INCREMENT":
-      zapCount += msg.payload?.delta || 1;
-      chrome.action.setBadgeText({ text: String(zapCount) });
-      return EZMessaging.makeResponse(true, { count: zapCount }, msg.requestId);
-
     case "ZAP_ADD_RULE": {
       const selector = msg.payload?.selector;
       const url = sender?.tab?.url || "";
@@ -57,10 +50,13 @@ async function handleMessage(msg, sender) {
         return EZMessaging.makeResponse(false, {}, msg.requestId, "Missing selector or host");
       }
 
+      // Always reload fresh rules from storage
+      const rulesByHost = await loadRules();
+
       if (!rulesByHost[host]) rulesByHost[host] = [];
       if (!rulesByHost[host].includes(selector)) {
         rulesByHost[host].push(selector);
-        saveRules();
+        saveRules(rulesByHost);
         EZLog.bg("Rule added:", host, selector);
       }
 
@@ -80,6 +76,7 @@ async function handleMessage(msg, sender) {
     case "ZAP_CLEAR_STORAGE": {
       chrome.storage.local.clear(() => {
         EZLog.bg("Storage cleared via ZAP_CLEAR_STORAGE");
+        chrome.action.setBadgeText({ text: "" });
       });
       return EZMessaging.makeResponse(true, {}, msg.requestId);
     }

@@ -24,27 +24,24 @@
   }
 
   chrome.storage.local.get(["zapRulesByHost"], (res) => {
+    appliedCount = 0;
+    totalRulesForSite = 0;
+
     const all = res.zapRulesByHost || {};
     let host = "";
 
-    try {
-      host = new URL(window.location.href).host;
-    } catch {}
+    try { host = new URL(window.location.href).host; } catch {}
 
     const rules = all[host] || [];
     totalRulesForSite = rules.length;
 
-    EZLog.cs("Applying persistent rules for host:", host, rules);
-
-    rules.forEach((selector) => {
+    rules.forEach(selector => {
       if (!selector || selector.includes("ez-highlight")) return;
 
       try {
         const nodes = document.querySelectorAll(selector);
-        if (nodes.length > 0) {
-          appliedCount += nodes.length;
-          nodes.forEach((el) => el.remove());
-        }
+        appliedCount += nodes.length;
+        nodes.forEach(el => el.remove());
       } catch (err) {
         EZLog.error("Failed applying rule:", selector, err);
       }
@@ -143,13 +140,12 @@
       const msg = EZMessaging.makeMessage("ZAP_CLEAR_STORAGE", {}, "content");
       EZSend.sendToBackground(msg);
 
-      // Optional: reset badge immediately
-      const badgeMsg = EZMessaging.makeMessage(
-        "ZAP_SET_BADGE",
-        { applied: 0, total: 0 },
-        "content"
-      );
-      EZSend.sendToBackground(badgeMsg);
+      // Also clear local rules cache on this page
+      chrome.storage.local.get(["zapRulesByHost"], () => {
+        appliedCount = 0;
+        totalRulesForSite = 0;
+        updateBadge();
+      });
     });
 
     document.body.appendChild(debugPanel);
@@ -259,10 +255,6 @@
         }
         EZLog.cs("Undo performed");
 
-        // decrement badge count
-        const msg = EZMessaging.makeMessage("ZAP_INCREMENT", { delta: -1 }, "content");
-        EZSend.sendToBackground(msg);
-
         appliedCount = Math.max(0, appliedCount - 1);
         updateBadge();
       }
@@ -338,14 +330,6 @@
 
       // Show undo toast
       createUndoToast();
-
-      // Increment badge count
-      const msgInc = EZMessaging.makeMessage(
-        "ZAP_INCREMENT",
-        { delta: 1 },
-        "content"
-      );
-      EZSend.sendToBackground(msgInc);
 
       // Add persistent rule
       const msgRule = EZMessaging.makeMessage(
