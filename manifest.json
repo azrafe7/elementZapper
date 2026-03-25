@@ -3,7 +3,7 @@
   "name": "Element Zapper (Clean Architecture Demo)",
   "version": "1.0.0",
   "description": "Test build using the new clean message-passing architecture.",
-  "permissions": ["scripting", "activeTab"],
+  "permissions": ["scripting", "activeTab", "storage"],
   "background": {
     "service_worker": "background/router.js"
   },

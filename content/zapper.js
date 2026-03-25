@@ -1,3 +1,16 @@
+chrome.storage.local.get(["zapRules"], (res) => {
+  const rules = res.zapRules || [];
+  EZLog.cs("Applying persistent rules:", rules);
+
+  rules.forEach((selector) => {
+    try {
+      document.querySelectorAll(selector).forEach((el) => el.remove());
+    } catch (err) {
+      EZLog.error("Failed applying rule:", selector, err);
+    }
+  });
+});
+
 (function () {
   let active = false;
   let lastHighlighted = null;
@@ -198,29 +211,53 @@
 
   function onClick(e) {
     if (!active) return;
+
+    // Ignore zapper UI (stop button, banner, undo toast, overlay)
     if (isZapperUI(e.target)) {
       EZLog.cs("Click on zapper UI → ignoring");
       return;
     }
 
+    // Prevent page interactions
     e.preventDefault();
     e.stopPropagation();
 
     EZLog.cs("Zapping element:", e.target);
 
+    // Save for undo
     lastRemoved = {
       node: e.target,
       parent: e.target.parentNode,
       nextSibling: e.target.nextSibling
     };
 
+    // Generate persistent selector
+    const selector = generateSelector(e.target);
+    EZLog.cs("Generated selector:", selector);
+
     try {
+      // Remove element
       e.target.remove();
+
+      // Show undo toast
       createUndoToast();
 
-      // notify background to increment badge count
-      const msg = EZMessaging.makeMessage("ZAP_INCREMENT", { delta: 1 }, "content");
-      EZSend.sendToBackground(msg);
+      // Increment badge count
+      const msgInc = EZMessaging.makeMessage(
+        "ZAP_INCREMENT",
+        { delta: 1 },
+        "content"
+      );
+      EZSend.sendToBackground(msgInc);
+
+      // Add persistent rule
+      const msgRule = EZMessaging.makeMessage(
+        "ZAP_ADD_RULE",
+        { selector },
+        "content"
+      );
+      EZSend.sendToBackground(msgRule);
+
     } catch (err) {
       EZLog.error("Failed to remove element:", err);
     }
@@ -241,6 +278,31 @@
 
     EZLog.cs("Right‑click → stopping zap mode");
     window.elementZapper.stop();
+  }
+
+  function generateSelector(el) {
+    if (!el) return null;
+
+    // Prefer ID
+    if (el.id) {
+      return `#${el.id}`;
+    }
+
+    // Use classes if available
+    if (el.classList.length > 0) {
+      return (
+        el.tagName.toLowerCase() +
+        "." +
+        Array.from(el.classList).join(".")
+      );
+    }
+
+    // Fallback: nth-child
+    const parent = el.parentElement;
+    if (!parent) return el.tagName.toLowerCase();
+
+    const index = Array.from(parent.children).indexOf(el) + 1;
+    return `${el.tagName.toLowerCase()}:nth-child(${index})`;
   }
 
   // -----------------------------

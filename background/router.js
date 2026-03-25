@@ -4,6 +4,17 @@ importScripts("../shared/send.js");
 
 let zapCount = 0;
 
+// Load rules on startup
+let rules = [];
+chrome.storage.local.get(["zapRules"], (res) => {
+  rules = res.zapRules || [];
+  EZLog.bg("Loaded rules:", rules);
+});
+
+function saveRules() {
+  chrome.storage.local.set({ zapRules: rules });
+}
+
 chrome.action.setBadgeBackgroundColor({ color: "#ff4d4d" });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -25,6 +36,15 @@ async function handleMessage(msg, sender) {
       zapCount += msg.payload?.delta || 1;
       chrome.action.setBadgeText({ text: String(zapCount) });
       return EZMessaging.makeResponse(true, { count: zapCount }, msg.requestId);
+
+    case "ZAP_ADD_RULE":
+      const selector = msg.payload?.selector;
+      if (selector && !rules.includes(selector)) {
+        rules.push(selector);
+        saveRules();
+        EZLog.bg("Rule added:", selector);
+      }
+      return EZMessaging.makeResponse(true, { rules }, msg.requestId);
 
     case "PING":
       return EZMessaging.makeResponse(true, { pong: true }, msg.requestId);

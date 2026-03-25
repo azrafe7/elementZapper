@@ -1,3 +1,5 @@
+let zapCount = 0;
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   EZLog.cs("Received message:", msg);
   handleContentMessage(msg).then(res => {
