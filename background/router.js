@@ -16,6 +16,12 @@ function saveRules() {
   chrome.storage.local.set({ zapRulesByHost: rulesByHost });
 }
 
+function clearAllStorage() {
+  chrome.storage.local.clear(() => {
+    EZLog.bg("All extension storage cleared");
+  });
+}
+
 chrome.action.setBadgeBackgroundColor({ color: "#ff4d4d" });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -69,6 +75,13 @@ async function handleMessage(msg, sender) {
       chrome.action.setBadgeBackgroundColor({ color: "#ff4d4d" });
       chrome.action.setBadgeText({ text });
       return EZMessaging.makeResponse(true, { applied, total }, msg.requestId);
+    }
+
+    case "ZAP_CLEAR_STORAGE": {
+      chrome.storage.local.clear(() => {
+        EZLog.bg("Storage cleared via ZAP_CLEAR_STORAGE");
+      });
+      return EZMessaging.makeResponse(true, {}, msg.requestId);
     }
 
     case "PING":

@@ -8,6 +8,8 @@
   let appliedCount = 0;
   let totalRulesForSite = 0;
   
+  let debugPanel = null;
+
   // -----------------------------
   // HELPERS
   // -----------------------------
@@ -95,6 +97,70 @@
   // -----------------------------
   // UI ELEMENTS
   // -----------------------------
+
+  function createDebugPanel() {
+    if (debugPanel) return;
+
+    debugPanel = document.createElement("div");
+    debugPanel.setAttribute("data-ez-ui", "1");
+
+    Object.assign(debugPanel.style, {
+      position: "fixed",
+      bottom: "20px",
+      left: "20px",
+      zIndex: "999999999",
+      padding: "10px",
+      background: "#222",
+      color: "white",
+      fontSize: "12px",
+      fontFamily: "monospace",
+      borderRadius: "6px",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
+      userSelect: "none",
+      minWidth: "160px"
+    });
+
+    debugPanel.innerHTML = `
+      <div style="margin-bottom:6px; font-weight:bold;">Zapper Debug</div>
+      <button data-ez-ui="1" id="ez-clear-storage-btn"
+        style="
+          width:100%;
+          padding:6px;
+          background:#ff4d4d;
+          color:white;
+          border:none;
+          border-radius:4px;
+          cursor:pointer;
+          font-size:12px;
+        ">
+        Clear Storage
+      </button>
+    `;
+
+    debugPanel.querySelector("#ez-clear-storage-btn").addEventListener("click", () => {
+      EZLog.cs("Debug: clearing storage");
+
+      const msg = EZMessaging.makeMessage("ZAP_CLEAR_STORAGE", {}, "content");
+      EZSend.sendToBackground(msg);
+
+      // Optional: reset badge immediately
+      const badgeMsg = EZMessaging.makeMessage(
+        "ZAP_SET_BADGE",
+        { applied: 0, total: 0 },
+        "content"
+      );
+      EZSend.sendToBackground(badgeMsg);
+    });
+
+    document.body.appendChild(debugPanel);
+  }
+
+  function removeDebugPanel() {
+    if (debugPanel) {
+      debugPanel.remove();
+      debugPanel = null;
+    }
+  }
 
   function createStopButton() {
     stopButton = document.createElement("div");
@@ -452,6 +518,7 @@
       createStopButton();
       createBanner();
       ensureOverlayBox();
+      createDebugPanel();
 
       EZLog.cs("Zapper started");
     },
@@ -477,6 +544,7 @@
       removeStopButton();
       removeBanner();
       removeOverlayBox();
+      removeDebugPanel();
 
       EZLog.cs("Zapper stopped");
     }
