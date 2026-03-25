@@ -54,10 +54,14 @@ async function handleMessage(msg, sender) {
       const rulesByHost = await loadRules();
 
       if (!rulesByHost[host]) rulesByHost[host] = [];
-      if (!rulesByHost[host].includes(selector)) {
-        rulesByHost[host].push({ selector, action: "remove" });
+      if (!rulesByHost[host].find(r => r.selector === selector)) {
+        rulesByHost[host].push({
+          selector,
+          action: msg.payload?.action || "hide",
+          persistent: msg.payload?.persistent !== false
+        });
         saveRules(rulesByHost);
-        EZLog.bg("Rule added:", host, selector);
+        EZLog.bg("Rule added:", host, selector, "action:", msg.payload?.action, "persistent:", msg.payload?.persistent);
       }
 
       const total = rulesByHost[host].length;

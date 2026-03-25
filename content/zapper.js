@@ -23,37 +23,92 @@
     EZSend.sendToBackground(msg);
   }
 
-  chrome.storage.local.get(["zapRulesByHost"], (res) => {
-    appliedCount = 0;
-    totalRulesForSite = 0;
+  // -----------------------------
+  // RULE APPLICATION
+  // -----------------------------
 
-    const all = res.zapRulesByHost || {};
-    let host = "";
+  // Tracks selectors already applied so the MutationObserver doesn't
+  // double-count nodes that were handled on the initial run.
+  const appliedSelectors = new Set();
+  let rulesObserver = null;
 
-    try { host = new URL(window.location.href).host; } catch {}
+  function getHost() {
+    try { return new URL(window.location.href).host; } catch { return ""; }
+  }
 
-    const rules = all[host] || [];
-    totalRulesForSite = rules.length;
+  // Apply all persistent rules for this host.
+  // Safe to call multiple times — skips selectors already fully applied.
+  function applyStoredRules() {
+    chrome.storage.local.get(["zapRulesByHost"], (res) => {
+      appliedCount = 0;
+      totalRulesForSite = 0;
 
-    rules.forEach(rule => {
-      const { selector, action } = rule;
-      if (!selector || selector.includes("ez-highlight")) return;
+      const all = res.zapRulesByHost || {};
+      const host = getHost();
+      const rules = all[host] || [];
+      totalRulesForSite = rules.length;
 
-      try {
-        const nodes = document.querySelectorAll(selector);
-        if (action === "remove") {
-          nodes.forEach(el => el.remove());
-        } else if (action === "hide") {
-          nodes.forEach(el => el.style.setProperty("display", "none", "important"));
+      rules.forEach(rule => {
+        const { selector, action, persistent } = rule;
+        if (!selector || selector.includes("ez-highlight")) return;
+        if (persistent === false) return;
+
+        try {
+          const nodes = document.querySelectorAll(selector);
+          nodes.forEach(el => {
+            if (action === "remove") {
+              el.remove();
+            } else if (action === "hide") {
+              el.style.setProperty("display", "none", "important");
+            }
+          });
+          appliedCount += nodes.length;
+        } catch (err) {
+          EZLog.error("Failed applying rule:", selector, err);
         }
-        appliedCount += nodes.length;
-      } catch (err) {
-        EZLog.error("Failed applying rule:", selector, err);
-      }
+      });
+
+      updateBadge();
+    });
+  }
+
+  // Start watching for DOM additions so rules apply on SPAs / lazy-loaded content.
+  function startRulesObserver() {
+    if (rulesObserver) return;
+
+    rulesObserver = new MutationObserver((mutations) => {
+      // Only re-apply if new nodes were actually added to the tree.
+      const hasAdditions = mutations.some(m => m.addedNodes.length > 0);
+      if (!hasAdditions) return;
+      applyStoredRules();
     });
 
-    updateBadge();
-  });
+    rulesObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    EZLog.cs("MutationObserver started for stored rules");
+  }
+
+  function stopRulesObserver() {
+    if (rulesObserver) {
+      rulesObserver.disconnect();
+      rulesObserver = null;
+      EZLog.cs("MutationObserver stopped");
+    }
+  }
+
+  // Kick off initial rule application, respecting document ready state.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      applyStoredRules();
+      startRulesObserver();
+    });
+  } else {
+    applyStoredRules();
+    startRulesObserver();
+  }
 
   function isZapperUI(el) {
     return !!(el && el.closest('[data-ez-ui="1"]'));
@@ -96,20 +151,61 @@
     }
   }
 
+  function clearAllHighlights() {
+    document.querySelectorAll(".ez-highlight").forEach(el => {
+      el.classList.remove("ez-highlight");
+    });
+  }
+
   function highlightMatches(selector) {
+    clearAllHighlights();
     try {
-      document.querySelectorAll(selector).forEach(el => {
-        el.classList.add("ez-highlight");
-      });
+      const el = document.querySelector(selector);
+      if (el) el.classList.add("ez-highlight");
     } catch {}
   }
 
   function unhighlightMatches(selector) {
     try {
+      const el = document.querySelector(selector);
+      if (el) el.classList.remove("ez-highlight");
+    } catch {}
+  }
+
+  function hideElements(selector) {
+    try {
       document.querySelectorAll(selector).forEach(el => {
-        el.classList.remove("ez-highlight");
+        el.style.setProperty("display", "none", "important");
       });
     } catch {}
+  }
+
+  function showElements(selector) {
+    try {
+      document.querySelectorAll(selector).forEach(el => {
+        el.style.removeProperty("display");
+      });
+    } catch {}
+  }
+
+  function showGhostForSelector(selector) {
+    try {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      ensureOverlayBox();
+      overlayBox.style.left = rect.left + "px";
+      overlayBox.style.top = rect.top + "px";
+      overlayBox.style.width = rect.width + "px";
+      overlayBox.style.height = rect.height + "px";
+    } catch {}
+  }
+
+  function hideGhost() {
+    if (overlayBox) {
+      overlayBox.style.width = "0";
+      overlayBox.style.height = "0";
+    }
   }
 
   function deleteRuleForHost(selectorToDelete) {
@@ -155,7 +251,8 @@
           return `
             <div data-ez-ui="1" class="ez-rule-item" 
                  data-selector='${selector}'
-                 style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                 data-action='${action}'
+                 style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; transition:outline 0.15s;">
               
               <code style="color:#8cf; flex:1; word-break:break-all;">${selector}</code>
 
@@ -169,12 +266,22 @@
                   padding:2px 6px;
                   cursor:pointer;
                   font-size:10px;
+                  transition:all 0.15s;
+                  min-width:22px;
                 ">
                 ✕
               </button>
-              <button class="ez-toggle-action" data-ez-ui="1"
-                style="margin-left:6px; background:#444; color:white; border:none; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:10px;">
-                ${action === "remove" ? "Remove" : "Hide"}
+              <button class="ez-toggle-remove" data-ez-ui="1"
+                style="margin-left:6px; background:${action === "remove" ? "#ff6b6b" : "#444"}; color:white; border:none; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:10px; transition:all 0.15s; min-width:46px;">
+                Remove
+              </button>
+              <button class="ez-toggle-hide" data-ez-ui="1"
+                style="margin-left:4px; background:${action === "hide" ? "#ffd93d" : action === "show" ? "#4ecdc4" : "#444"}; color:${action === "hide" ? "#222" : action === "show" ? "#222" : "white"}; border:none; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:10px; transition:all 0.15s; min-width:36px;">
+                ${action === "hide" ? "Show" : "Hide"}
+              </button>
+              <button class="ez-toggle-persistent" data-ez-ui="1"
+                style="margin-left:4px; background:${rule.persistent !== false ? "#4ecdc4" : "#444"}; color:${rule.persistent !== false ? "#222" : "white"}; border:none; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:10px; transition:all 0.15s; min-width:32px;">
+                Save
               </button>
             </div>
           `;
@@ -185,33 +292,89 @@
       list.querySelectorAll(".ez-rule-item").forEach(item => {
         const selector = item.getAttribute("data-selector");
 
-        item.addEventListener("mouseenter", () => highlightMatches(selector));
-        item.addEventListener("mouseleave", () => unhighlightMatches(selector));
+        item.addEventListener("mouseenter", () => {
+          item.style.outline = "1px solid #4FC3F7";
+          highlightMatches(selector);
+          // Read the action from the data attribute set at render time,
+          // not from the closed-over `rule` variable which is out of scope here.
+          const itemAction = item.getAttribute("data-action");
+          if (itemAction === "hide") {
+            showGhostForSelector(selector);
+          }
+        });
+        item.addEventListener("mouseleave", () => {
+          item.style.outline = "";
+          unhighlightMatches(selector);
+          hideGhost();
+        });
 
         const delBtn = item.querySelector(".ez-delete-rule");
+        const removeBtn = item.querySelector(".ez-toggle-remove");
+        const hideBtn = item.querySelector(".ez-toggle-hide");
+        const persistBtn = item.querySelector(".ez-toggle-persistent");
+
+        [delBtn, removeBtn, hideBtn, persistBtn].forEach(btn => {
+          btn.addEventListener("mouseenter", () => {
+            btn.style.opacity = "1";
+            btn.style.transform = "scale(1.05)";
+          });
+          btn.addEventListener("mouseleave", () => {
+            btn.style.opacity = "";
+            btn.style.transform = "";
+          });
+        });
+
         delBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
           deleteRuleForHost(selector);
         });
-        
-        const toggleBtn = item.querySelector(".ez-toggle-action");
-        toggleBtn.addEventListener("click", (e) => {
+
+        removeBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
-
           chrome.storage.local.get(["zapRulesByHost"], (res) => {
             const all = res.zapRulesByHost || {};
             const rules = all[host] || [];
+            const rule = rules.find(r => r.selector === selector);
+            if (!rule) return;
+            rule.action = "remove";
+            chrome.storage.local.set({ zapRulesByHost: all }, () => refreshRulesViewer());
+          });
+        });
 
+        hideBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          chrome.storage.local.get(["zapRulesByHost"], (res) => {
+            const all = res.zapRulesByHost || {};
+            const rules = all[host] || [];
             const rule = rules.find(r => r.selector === selector);
             if (!rule) return;
 
-            rule.action = rule.action === "remove" ? "hide" : "remove";
+            const currentlyHidden = rule.action === "hide";
+            if (currentlyHidden) {
+              rule.action = "show";
+              showElements(selector);
+            } else {
+              rule.action = "hide";
+              hideElements(selector);
+            }
 
-            chrome.storage.local.set({ zapRulesByHost: all }, () => {
-              refreshRulesViewer();
-            });
+            chrome.storage.local.set({ zapRulesByHost: all }, () => refreshRulesViewer());
+          });
+        });
+
+        persistBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          chrome.storage.local.get(["zapRulesByHost"], (res) => {
+            const all = res.zapRulesByHost || {};
+            const rules = all[host] || [];
+            const rule = rules.find(r => r.selector === selector);
+            if (!rule) return;
+            rule.persistent = rule.persistent === false ? true : false;
+            chrome.storage.local.set({ zapRulesByHost: all }, () => refreshRulesViewer());
           });
         });
 
@@ -222,6 +385,10 @@
   // -----------------------------
   // UI ELEMENTS
   // -----------------------------
+
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
 
   function createDebugPanel() {
     if (debugPanel) return;
@@ -242,7 +409,28 @@
       borderRadius: "6px",
       boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
       userSelect: "none",
-      minWidth: "160px"
+      minWidth: "160px",
+      cursor: "move"
+    });
+
+    debugPanel.addEventListener("mousedown", (e) => {
+      if (e.target.closest("button")) return;
+      isDragging = true;
+      dragOffsetX = e.clientX - debugPanel.offsetLeft;
+      dragOffsetY = e.clientY - debugPanel.offsetTop;
+      debugPanel.style.cursor = "grabbing";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      debugPanel.style.left = (e.clientX - dragOffsetX) + "px";
+      debugPanel.style.top = (e.clientY - dragOffsetY) + "px";
+      debugPanel.style.bottom = "auto";
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+      debugPanel.style.cursor = "move";
     });
 
     debugPanel.innerHTML = `
@@ -340,6 +528,18 @@
     });
 
     document.body.appendChild(debugPanel);
+
+    // Add hover effects to debug panel buttons
+    debugPanel.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("mouseenter", () => {
+        btn.style.opacity = "1";
+        btn.style.transform = "scale(1.02)";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.opacity = "";
+        btn.style.transform = "";
+      });
+    });
     
     // DELETE RULES FOR THIS SITE
     debugPanel.querySelector("#ez-delete-site-rules-btn").addEventListener("click", (e) => {
@@ -465,7 +665,7 @@
 
   function createUndoToast() {
     const toast = document.createElement("div");
-    toast.textContent = "Element removed — Undo?";
+    toast.textContent = "Element hidden — Undo?";
     toast.setAttribute("data-ez-ui", "1");
 
     Object.assign(toast.style, {
@@ -485,12 +685,9 @@
     });
 
     toast.addEventListener("click", () => {
-      if (lastRemoved && lastRemoved.node && lastRemoved.parent) {
-        if (lastRemoved.nextSibling) {
-          lastRemoved.parent.insertBefore(lastRemoved.node, lastRemoved.nextSibling);
-        } else {
-          lastRemoved.parent.appendChild(lastRemoved.node);
-        }
+      if (lastRemoved?.node) {
+        // Element was hidden in place — just restore its display.
+        lastRemoved.node.style.removeProperty("display");
         EZLog.cs("Undo performed");
 
         appliedCount = Math.max(0, appliedCount - 1);
@@ -549,42 +746,36 @@
     e.preventDefault();
     e.stopPropagation();
 
-    EZLog.cs("Zapping element:", e.target);
+    const target = e.target;
+    EZLog.cs("Zapping element:", target);
 
-    // Save for undo
-    lastRemoved = {
-      node: e.target,
-      parent: e.target.parentNode,
-      nextSibling: e.target.nextSibling
-    };
-
-    // Generate persistent selector
-    const selector = generateSelector(e.target);
+    // Generate selector BEFORE hiding so the element is still in the DOM
+    // and the selector can be validated against it.
+    const selector = generateSelector(target);
     EZLog.cs("Generated selector:", selector);
 
-    try {
-      // Remove element
-      e.target.remove();
+    // Hide the element visually (keep it in the DOM so undo is trivial
+    // and the saved rule action:"hide" matches what we actually did).
+    target.style.setProperty("display", "none", "important");
 
-      // Show undo toast
-      createUndoToast();
+    // Save enough context to undo (just re-show the element).
+    lastRemoved = { node: target };
 
-      // Add persistent rule
-      const msgRule = EZMessaging.makeMessage(
-        "ZAP_ADD_RULE",
-        { selector },
-        "content"
-      );
-      EZSend.sendToBackground(msgRule).then((res) => {
-        appliedCount += 1;
-        totalRulesForSite = res?.payload?.total ?? totalRulesForSite;
-        updateBadge();
-        refreshRulesViewer();
-      });
+    // Show undo toast
+    createUndoToast();
 
-    } catch (err) {
-      EZLog.error("Failed to remove element:", err);
-    }
+    // Persist the rule
+    const msgRule = EZMessaging.makeMessage(
+      "ZAP_ADD_RULE",
+      { selector, action: "hide", persistent: true },
+      "content"
+    );
+    EZSend.sendToBackground(msgRule).then((res) => {
+      appliedCount += 1;
+      totalRulesForSite = res?.payload?.total ?? totalRulesForSite;
+      updateBadge();
+      refreshRulesViewer();
+    });
   }
 
   function onKeyDown(e) {
