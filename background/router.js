@@ -55,7 +55,7 @@ async function handleMessage(msg, sender) {
 
       if (!rulesByHost[host]) rulesByHost[host] = [];
       if (!rulesByHost[host].includes(selector)) {
-        rulesByHost[host].push(selector);
+        rulesByHost[host].push({ selector, action: "remove" });
         saveRules(rulesByHost);
         EZLog.bg("Rule added:", host, selector);
       }

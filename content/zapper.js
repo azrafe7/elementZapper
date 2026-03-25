@@ -35,13 +35,18 @@
     const rules = all[host] || [];
     totalRulesForSite = rules.length;
 
-    rules.forEach(selector => {
+    rules.forEach(rule => {
+      const { selector, action } = rule;
       if (!selector || selector.includes("ez-highlight")) return;
 
       try {
         const nodes = document.querySelectorAll(selector);
+        if (action === "remove") {
+          nodes.forEach(el => el.remove());
+        } else if (action === "hide") {
+          nodes.forEach(el => el.style.setProperty("display", "none", "important"));
+        }
         appliedCount += nodes.length;
-        nodes.forEach(el => el.remove());
       } catch (err) {
         EZLog.error("Failed applying rule:", selector, err);
       }
@@ -51,7 +56,7 @@
   });
 
   function isZapperUI(el) {
-    return el && el.closest('[data-ez-ui="1"]');
+    return !!(el && el.closest('[data-ez-ui="1"]'));
   }
 
   function ensureOverlayBox() {
@@ -91,6 +96,42 @@
     }
   }
 
+  function highlightMatches(selector) {
+    try {
+      document.querySelectorAll(selector).forEach(el => {
+        el.classList.add("ez-highlight");
+      });
+    } catch {}
+  }
+
+  function unhighlightMatches(selector) {
+    try {
+      document.querySelectorAll(selector).forEach(el => {
+        el.classList.remove("ez-highlight");
+      });
+    } catch {}
+  }
+
+  function deleteRuleForHost(selectorToDelete) {
+    chrome.storage.local.get(["zapRulesByHost"], (res) => {
+      const all = res.zapRulesByHost || {};
+      let host = "";
+
+      try { host = new URL(window.location.href).host; } catch {}
+
+      if (!all[host]) return;
+
+      all[host] = all[host].filter(rule => {
+        const { selector, action } = rule;
+        return selector !== selectorToDelete;
+      });
+
+      chrome.storage.local.set({ zapRulesByHost: all }, () => {
+        refreshRulesViewer();
+      });
+    });
+  }
+
   function refreshRulesViewer() {
     const list = debugPanel?.querySelector("#ez-rules-list");
     if (!list) return;
@@ -109,14 +150,72 @@
       }
 
       list.innerHTML = rules
-        .map((sel, i) => {
+        .map((rule, i) => {
+          const { selector, action } = rule;
           return `
-            <div data-ez-ui="1" style="margin-bottom:6px;">
-              <code style="color:#8cf;">${sel}</code>
+            <div data-ez-ui="1" class="ez-rule-item" 
+                 data-selector='${selector}'
+                 style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+              
+              <code style="color:#8cf; flex:1; word-break:break-all;">${selector}</code>
+
+              <button data-ez-ui="1" class="ez-delete-rule"
+                style="
+                  margin-left:8px;
+                  background:#ff4d4d;
+                  color:white;
+                  border:none;
+                  border-radius:3px;
+                  padding:2px 6px;
+                  cursor:pointer;
+                  font-size:10px;
+                ">
+                ✕
+              </button>
+              <button class="ez-toggle-action" data-ez-ui="1"
+                style="margin-left:6px; background:#444; color:white; border:none; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:10px;">
+                ${action === "remove" ? "Remove" : "Hide"}
+              </button>
             </div>
           `;
         })
         .join("");
+
+      // Add hover highlight + delete handlers
+      list.querySelectorAll(".ez-rule-item").forEach(item => {
+        const selector = item.getAttribute("data-selector");
+
+        item.addEventListener("mouseenter", () => highlightMatches(selector));
+        item.addEventListener("mouseleave", () => unhighlightMatches(selector));
+
+        const delBtn = item.querySelector(".ez-delete-rule");
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          deleteRuleForHost(selector);
+        });
+        
+        const toggleBtn = item.querySelector(".ez-toggle-action");
+        toggleBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+
+          chrome.storage.local.get(["zapRulesByHost"], (res) => {
+            const all = res.zapRulesByHost || {};
+            const rules = all[host] || [];
+
+            const rule = rules.find(r => r.selector === selector);
+            if (!rule) return;
+
+            rule.action = rule.action === "remove" ? "hide" : "remove";
+
+            chrome.storage.local.set({ zapRulesByHost: all }, () => {
+              refreshRulesViewer();
+            });
+          });
+        });
+
+      });
     });
   }
 
@@ -164,6 +263,51 @@
         Clear Storage
       </button>
 
+      <button data-ez-ui="1" id="ez-delete-site-rules-btn"
+        style="
+          width:100%;
+          padding:6px;
+          background:#d9534f;
+          color:white;
+          border:none;
+          border-radius:4px;
+          cursor:pointer;
+          font-size:12px;
+          margin-bottom:10px;
+        ">
+        Delete Rules (This Site)
+      </button>
+
+      <button data-ez-ui="1" id="ez-refresh-rules-btn"
+        style="
+          width:100%;
+          padding:6px;
+          background:#5bc0de;
+          color:white;
+          border:none;
+          border-radius:4px;
+          cursor:pointer;
+          font-size:12px;
+          margin-bottom:10px;
+        ">
+        Refresh List
+      </button>
+
+      <button data-ez-ui="1" id="ez-log-rules-btn"
+        style="
+          width:100%;
+          padding:6px;
+          background:#5cb85c;
+          color:white;
+          border:none;
+          border-radius:4px;
+          cursor:pointer;
+          font-size:12px;
+          margin-bottom:10px;
+        ">
+        Log Rules (Console)
+      </button>
+
       <div style="margin-bottom:4px; font-weight:bold;">Rules for this site:</div>
       <div id="ez-rules-list" data-ez-ui="1"
         style="
@@ -196,6 +340,52 @@
     });
 
     document.body.appendChild(debugPanel);
+    
+    // DELETE RULES FOR THIS SITE
+    debugPanel.querySelector("#ez-delete-site-rules-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      chrome.storage.local.get(["zapRulesByHost"], (res) => {
+        const all = res.zapRulesByHost || {};
+        let host = "";
+
+        try { host = new URL(window.location.href).host; } catch {}
+
+        if (all[host]) {
+          delete all[host];
+          chrome.storage.local.set({ zapRulesByHost: all }, () => {
+            appliedCount = 0;
+            totalRulesForSite = 0;
+            updateBadge();
+            refreshRulesViewer();
+          });
+        }
+      });
+    });
+
+    // REFRESH LIST
+    debugPanel.querySelector("#ez-refresh-rules-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      refreshRulesViewer();
+    });
+
+    // LOG RULES
+    debugPanel.querySelector("#ez-log-rules-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      chrome.storage.local.get(["zapRulesByHost"], (res) => {
+        const all = res.zapRulesByHost || {};
+        let host = "";
+
+        try { host = new URL(window.location.href).host; } catch {}
+
+        console.log("Rules for", host, all[host] || []);
+      });
+    });
+
     refreshRulesViewer();
   }
 
@@ -385,12 +575,12 @@
         { selector },
         "content"
       );
-      EZSend.sendToBackground(msgRule);
-
-      appliedCount += 1;
-      totalRulesForSite += 1;
-      updateBadge();
-      refreshRulesViewer();
+      EZSend.sendToBackground(msgRule).then((res) => {
+        appliedCount += 1;
+        totalRulesForSite = res?.payload?.total ?? totalRulesForSite;
+        updateBadge();
+        refreshRulesViewer();
+      });
 
     } catch (err) {
       EZLog.error("Failed to remove element:", err);
