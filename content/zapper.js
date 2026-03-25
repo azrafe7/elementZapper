@@ -91,6 +91,35 @@
     }
   }
 
+  function refreshRulesViewer() {
+    const list = debugPanel?.querySelector("#ez-rules-list");
+    if (!list) return;
+
+    chrome.storage.local.get(["zapRulesByHost"], (res) => {
+      const all = res.zapRulesByHost || {};
+      let host = "";
+
+      try { host = new URL(window.location.href).host; } catch {}
+
+      const rules = all[host] || [];
+
+      if (rules.length === 0) {
+        list.innerHTML = `<div style="opacity:0.6;">No rules for this site</div>`;
+        return;
+      }
+
+      list.innerHTML = rules
+        .map((sel, i) => {
+          return `
+            <div data-ez-ui="1" style="margin-bottom:6px;">
+              <code style="color:#8cf;">${sel}</code>
+            </div>
+          `;
+        })
+        .join("");
+    });
+  }
+
   // -----------------------------
   // UI ELEMENTS
   // -----------------------------
@@ -119,6 +148,7 @@
 
     debugPanel.innerHTML = `
       <div style="margin-bottom:6px; font-weight:bold;">Zapper Debug</div>
+
       <button data-ez-ui="1" id="ez-clear-storage-btn"
         style="
           width:100%;
@@ -129,9 +159,25 @@
           border-radius:4px;
           cursor:pointer;
           font-size:12px;
+          margin-bottom:10px;
         ">
         Clear Storage
       </button>
+
+      <div style="margin-bottom:4px; font-weight:bold;">Rules for this site:</div>
+      <div id="ez-rules-list" data-ez-ui="1"
+        style="
+          max-height:150px;
+          overflow-y:auto;
+          background:#111;
+          padding:6px;
+          border-radius:4px;
+          font-size:11px;
+          line-height:1.4;
+          border:1px solid #444;
+        ">
+        <div style="opacity:0.6;">Loading…</div>
+      </div>
     `;
 
     debugPanel.querySelector("#ez-clear-storage-btn").addEventListener("click", () => {
@@ -145,10 +191,12 @@
         appliedCount = 0;
         totalRulesForSite = 0;
         updateBadge();
+        refreshRulesViewer();
       });
     });
 
     document.body.appendChild(debugPanel);
+    refreshRulesViewer();
   }
 
   function removeDebugPanel() {
@@ -342,6 +390,7 @@
       appliedCount += 1;
       totalRulesForSite += 1;
       updateBadge();
+      refreshRulesViewer();
 
     } catch (err) {
       EZLog.error("Failed to remove element:", err);
