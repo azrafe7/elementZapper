@@ -315,25 +315,40 @@
     window.elementZapper.stop();
   }
 
-  function generateSelector(el) {
-    if (!el) return null;
+  function cleanSelector(selector) {
+    if (!selector) return selector;
 
+    return selector
+      .replace(/\.ez-highlight\b/g, "") // remove our class
+      .replace(/\s+/g, " ")             // collapse whitespace
+      .trim();
+  }
+
+  function isUniqueSelector(selector, root = document) {
+    try {
+      const nodes = root.querySelectorAll(selector);
+      return nodes.length === 1;
+    } catch {
+      return false;
+    }
+  }
+
+  function fallbackSelector(el) {
     const parts = [];
 
     while (el && el.nodeType === Node.ELEMENT_NODE && el !== document.body) {
       let part = el.tagName.toLowerCase();
 
-      // ignore our own classes
       const classes = Array.from(el.classList || []).filter(
         c => c !== "ez-highlight"
       );
 
       if (el.id) {
-        part = `#${el.id}`;
+        part = `#${jq(el.id)}`;
         parts.unshift(part);
-        break; // ID is unique enough
+        break;
       } else if (classes.length > 0) {
-        part += "." + classes.join(".");
+        part += "." + classes.map(jq).join(".");
       } else {
         const parent = el.parentElement;
         if (!parent) {
@@ -349,6 +364,71 @@
     }
 
     return parts.join(" > ");
+  }
+
+  function generateSelector(el) {
+    if (!el) return null;
+
+    // 1. Remove our own classes before generating selector
+    const originalClasses = [...el.classList];
+    el.classList.remove("ez-highlight");
+
+    // 2. Try elemToSelector() first (your implementation)
+    let selector = null;
+    try {
+      selector = elemToSelector(el, { compact: true, fullPath: false });
+    } catch (err) {
+      EZLog.error("elemToSelector failed:", err);
+    }
+
+    // Restore classes
+    el.classList.value = originalClasses.join(" ");
+
+    // 3. Clean selector (strip ez-highlight if it slipped in)
+    selector = cleanSelector(selector);
+
+    // 4. If selector is valid AND unique → use it
+    if (selector && isUniqueSelector(selector)) {
+      EZLog.cs("Selector from elemToSelector is unique:", selector);
+      return selector;
+    }
+
+    EZLog.cs("elemToSelector selector not unique, falling back:", selector);
+
+    // 5. Fallback: deterministic path-based selector
+    selector = fallbackSelector(el);
+    selector = cleanSelector(selector);
+
+    // 6. If fallback is unique → done
+    if (isUniqueSelector(selector)) {
+      EZLog.cs("Fallback selector is unique:", selector);
+      return selector;
+    }
+
+    // 7. Last resort: walk up ancestors and tighten
+    let current = el.parentElement;
+    while (current && current !== document.body) {
+      let parentSel = null;
+
+      try {
+        parentSel = elemToSelector(current, { compact: true, fullPath: false });
+        parentSel = cleanSelector(parentSel);
+      } catch {}
+
+      if (parentSel && isUniqueSelector(parentSel)) {
+        const combined = `${parentSel} ${el.tagName.toLowerCase()}`;
+        if (isUniqueSelector(combined)) {
+          EZLog.cs("Ancestor-based selector:", combined);
+          return combined;
+        }
+      }
+
+      current = current.parentElement;
+    }
+
+    // 8. If all else fails, return the fallback (even if not unique)
+    EZLog.cs("Returning non-unique fallback selector:", selector);
+    return selector;
   }
 
   // -----------------------------

@@ -17,6 +17,7 @@
         "shared/log.js",
         "shared/messaging.js",
         "shared/send.js",
+        "content/elemToSelector.js",
         "content/router.js",
         "content/zapper.js"
       ],
